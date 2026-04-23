@@ -14,7 +14,7 @@ type PaymentStep = 'prepare' | 'scan' | 'verify' | 'otp' | 'processing' | 'succe
 
 export default function PaymentScan({ onNavigate }: PaymentScanProps) {
   const [step, setStep] = useState<PaymentStep>('prepare');
-  const [amount, setAmount] = useState('1250');
+  const [amount, setAmount] = useState('0');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [matchedCustomer, setMatchedCustomer] = useState<any>(null);
@@ -228,7 +228,7 @@ export default function PaymentScan({ onNavigate }: PaymentScanProps) {
                   <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Merchant</span>
                   <span className="font-bold flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-yellow-500" />
-                    City Mart Express
+                    XYZ STORE NAME
                   </span>
                 </div>
                 <div className="space-y-1">
@@ -273,7 +273,7 @@ export default function PaymentScan({ onNavigate }: PaymentScanProps) {
 
                 <div className="relative flex-1 bg-slate-100 rounded-xl overflow-hidden group">
                   <CameraView 
-                    className={`h-full ${step === 'verify' ? 'ring-4 ring-blue-500 ring-inset' : ''}`}
+                    className={`w-full h-full ${step === 'verify' ? 'ring-4 ring-blue-500 ring-inset' : ''}`}
                     onVideoLoad={(v) => videoRef.current = v}
                     overlay={
                       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
@@ -292,25 +292,6 @@ export default function PaymentScan({ onNavigate }: PaymentScanProps) {
                           </motion.div>
                         )}
                         
-                        {/* AI Diagnostic Overlay - Technical B.Tech Feel */}
-                        <div className="absolute top-4 left-4 flex flex-col gap-2">
-                           <div className="bg-black/70 backdrop-blur-md text-[9px] font-mono p-2 rounded border border-white/10 text-white/80 min-w-[140px]">
-                              <p className="border-b border-white/10 pb-1 mb-1 text-blue-400 font-bold uppercase tracking-tighter">AI_MATRICES_RUNNING</p>
-                              <div className="flex justify-between"><span>EXTRACTOR</span> <span className="text-emerald-400">active</span></div>
-                              <div className="flex justify-between"><span>LATENCY</span> <span>214ms</span></div>
-                              <div className="flex justify-between"><span>CONFIDENCE</span> <span>0.9841</span></div>
-                              <div className="flex justify-between"><span>DESCRIPTORS</span> <span>128-DIM</span></div>
-                           </div>
-                           <div className="bg-blue-600/80 backdrop-blur-md text-[8px] font-mono p-1 px-2 rounded text-white inline-block w-fit">
-                              GPU_ACCEL: ON
-                           </div>
-                        </div>
-
-                        <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-[10px] font-mono flex items-center gap-2">
-                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                           LIVENESS: {step === 'verify' ? '98.4%' : 'READY'}
-                        </div>
-
                         {step === 'verify' && (
                            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/10 backdrop-blur-[1px]">
                               <motion.div
@@ -476,7 +457,7 @@ export default function PaymentScan({ onNavigate }: PaymentScanProps) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[10px] font-black uppercase text-neutral-400">Merchant</span>
-                    <span className="text-sm font-bold uppercase">City Mart</span>
+                    <span className="text-sm font-bold uppercase">XYZ STORE NAME</span>
                   </div>
                   <div className="flex justify-between pt-4 border-t border-neutral-100">
                     <span className="text-[10px] font-black uppercase text-neutral-400">Total Amount</span>

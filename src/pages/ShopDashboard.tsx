@@ -100,7 +100,7 @@ export default function ShopDashboard({ onNavigate }: ShopDashboardProps) {
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-hidden font-sans">
       {/* Sidebar Navigation - Professional Polish Styling */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 hidden lg:flex">
+      <aside className="w-64 bg-slate-900 text-slate-300 flex-col border-r border-slate-800 hidden lg:flex">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-8">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold">L2P</div>

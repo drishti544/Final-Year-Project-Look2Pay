@@ -149,7 +149,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
 
               <div className="aspect-square max-w-[320px] mx-auto rounded-full overflow-hidden border-4 border-slate-100 shadow-inner group relative">
                 <CameraView 
-                   className="h-full scale-x-[-1]"
+                   className="w-full h-full"
                    onVideoLoad={(v) => videoRef.current = v}
                    overlay={
                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -158,15 +158,6 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
                     </div>
                   }
                 />
-                
-                {/* AI Extraction Log Overlay */}
-                <div className="absolute bottom-4 left-0 right-0 px-8 pointer-events-none">
-                   <div className="bg-black/60 backdrop-blur-sm rounded p-2 text-[7px] font-mono text-emerald-400 border border-emerald-500/20">
-                      <p className="flex justify-between"><span>[SCN] FACE_DETECTION:</span> <span>STABLE</span></p>
-                      <p className="flex justify-between"><span>[VEC] 128D_EXTRACT:</span> <span>PENDING</span></p>
-                      <p className="flex justify-between"><span>[MTX] NORM_SCORE:</span> <span>0.95</span></p>
-                   </div>
-                </div>
               </div>
 
               {error && (

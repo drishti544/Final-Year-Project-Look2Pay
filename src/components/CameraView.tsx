@@ -40,7 +40,7 @@ export default function CameraView({ onVideoLoad, className = '', overlay }: Cam
   }, []);
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-neutral-900 aspect-video ${className}`}>
+    <div className={`relative overflow-hidden bg-neutral-900 ${className}`}>
       {error ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center">
           <Camera className="w-12 h-12 mb-4 opacity-50" />
@@ -61,7 +61,7 @@ export default function CameraView({ onVideoLoad, className = '', overlay }: Cam
             playsInline
             muted
             onLoadedMetadata={() => videoRef.current && onVideoLoad?.(videoRef.current)}
-            className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+            className="absolute inset-0 w-full h-full object-cover object-center scale-x-[-1]"
           />
           <div className="absolute inset-0 ring-1 ring-white/10" />
           {overlay}
