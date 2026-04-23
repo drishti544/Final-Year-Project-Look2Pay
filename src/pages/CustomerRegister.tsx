@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { ViewState } from '../types';
 import CameraView from '../components/CameraView';
 import { getFaceEmbedding } from '../utils/faceApi';
-import { User, Phone, ArrowLeft, CheckCircle2, UserPlus, Loader2 } from 'lucide-react';
+import { User, Phone, ArrowLeft, CheckCircle2, UserPlus, Loader2, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface CustomerRegisterProps {
@@ -14,6 +14,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
   const [step, setStep] = useState<'info' | 'scan' | 'success'>('info');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [initialBalance, setInitialBalance] = useState('5000');
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -45,7 +46,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
         name,
         phone,
         embedding: Array.from(embedding),
-        wallet: 5000,
+        wallet: parseFloat(initialBalance),
         createdAt: new Date().toISOString()
       };
       
@@ -95,43 +96,57 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
               <p className="text-slate-500 text-sm">Securely link your face to your digital wallet.</p>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input 
-                    type="text" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-800"
-                  />
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input 
+                      type="text" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-800"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Mobile Access</label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input 
-                    type="tel" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91"
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-800"
-                  />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Mobile Access</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input 
+                      type="tel" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91"
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-800"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <button
-                disabled={!name || !phone}
-                onClick={handleNext}
-                className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-blue-700 disabled:opacity-30 transition-all shadow-lg shadow-blue-100"
-              >
-                Proceed to Biometric Scan
-              </button>
-            </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Pre-Authorize Wallet (₹)</label>
+                  <div className="relative">
+                    <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input 
+                      type="number" 
+                      value={initialBalance}
+                      onChange={(e) => setInitialBalance(e.target.value)}
+                      placeholder="Enter amount"
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  disabled={!name || !phone || !initialBalance}
+                  onClick={handleNext}
+                  className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-blue-700 disabled:opacity-30 transition-all shadow-lg shadow-blue-100"
+                >
+                  Proceed to Biometric Scan
+                </button>
+              </div>
           </motion.div>
         )}
 
@@ -203,7 +218,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
               <div className="flex justify-between items-center">
                  <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pre-Authorized Balance</p>
-                    <p className="text-2xl font-black text-slate-900 leading-none">₹5,000.00</p>
+                    <p className="text-2xl font-black text-slate-900 leading-none">₹{parseFloat(initialBalance).toLocaleString()}.00</p>
                  </div>
                  <Sparkles size={24} className="text-blue-500" />
               </div>

@@ -42,16 +42,28 @@ export default function CameraView({ onVideoLoad, className = '', overlay }: Cam
   return (
     <div className={`relative overflow-hidden bg-neutral-900 ${className}`}>
       {error ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center">
-          <Camera className="w-12 h-12 mb-4 opacity-50" />
-          <p className="font-medium">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Retry
-          </button>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 backdrop-blur-sm text-white p-8 text-center z-50">
+          <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mb-6 animate-pulse">
+            <Camera className="w-8 h-8" />
+          </div>
+          
+          <h4 className="text-lg font-bold mb-3 uppercase tracking-tight">Camera Access Required</h4>
+          <p className="text-slate-400 text-sm mb-8 leading-relaxed max-w-[280px]">
+            To enable biometric payments, please click the <strong>camera icon</strong> in your browser address bar and select <strong>"Allow"</strong>.
+          </p>
+
+          <div className="flex flex-col gap-3 w-full max-w-[240px]">
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+              Check browser site settings
+            </p>
+          </div>
         </div>
       ) : (
         <>

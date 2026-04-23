@@ -1,5 +1,5 @@
 {
-  "name": "Look2Pay Biometric Gateway",
+  "name": "Look2Pay -Ai Facial Recognition Payment System",
   "description": "B.Tech Final Year Project - Facial recognition-based decentralized payment system with liveliness detection and secure vector embeddings.",
   "requestFramePermissions": [
     "camera"

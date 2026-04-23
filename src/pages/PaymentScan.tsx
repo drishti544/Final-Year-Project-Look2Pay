@@ -271,7 +271,7 @@ export default function PaymentScan({ onNavigate }: PaymentScanProps) {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Feed #1 • 1080p</span>
                 </div>
 
-                <div className="relative flex-1 bg-slate-100 rounded-xl overflow-hidden group">
+                <div className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden group">
                   <CameraView 
                     className={`w-full h-full ${step === 'verify' ? 'ring-4 ring-blue-500 ring-inset' : ''}`}
                     onVideoLoad={(v) => videoRef.current = v}
@@ -282,7 +282,16 @@ export default function PaymentScan({ onNavigate }: PaymentScanProps) {
                           <div className="w-48 h-48 border border-blue-300/20 rounded-full" />
                         </div>
                         
-                        {step === 'scan' && (
+                        {isAnalyzing && (
+                          <motion.div 
+                            initial={{ top: "0%" }}
+                            animate={{ top: "100%" }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                            className="absolute left-0 right-0 h-1 bg-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.5)] z-20"
+                          />
+                        )}
+                        
+                        {step === 'scan' && !isAnalyzing && (
                           <motion.div 
                             animate={{ opacity: [0.4, 1, 0.4] }}
                             transition={{ duration: 2, repeat: Infinity }}
