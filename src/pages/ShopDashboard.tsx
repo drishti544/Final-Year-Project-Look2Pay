@@ -102,9 +102,9 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex overflow-hidden font-sans">
+    <div className="min-h-screen bg-slate-50 font-sans flex overflow-clip">
       {/* Sidebar Navigation - Professional Polish Styling */}
-      <aside className="w-64 bg-slate-900 text-slate-300 border-r border-slate-800 hidden lg:flex lg:flex-col">
+      <aside className="w-64 bg-slate-900 text-slate-300 border-r border-slate-800 hidden lg:flex-col">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-8">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold">L2P</div>
@@ -234,7 +234,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
 
                   {/* System Alert / Inventory Mock */}
                   <div className="xl:col-span-2 space-y-6">
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-hidden flex flex-col h-full ring-1 ring-slate-100 text-left">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-clip flex-col h-full ring-1 ring-slate-100 text-left flex">
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="font-semibold text-slate-800 uppercase text-xs tracking-widest">Inventory Status</h4>
                           <div className="p-1 px-2 bg-emerald-50 text-emerald-600 rounded text-[9px] font-black uppercase">Active Node</div>
@@ -258,7 +258,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                           </div>
 
                           {/* System Technical Logs - Highlighting B.Tech Project Logic */}
-                          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm h-64 overflow-hidden flex flex-col font-mono text-[9px] text-blue-400/80">
+                          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm h-64 overflow-clip flex-col font-mono text-[9px] text-blue-400/80 flex">
                             <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
                               <div className="flex items-center gap-1.5 uppercase font-bold tracking-tighter">
                                 <div className="w-1 h-1 rounded-full bg-blue-500 animate-ping" />
