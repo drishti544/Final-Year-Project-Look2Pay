@@ -5,9 +5,10 @@ import { Camera, Store, UserPlus, CreditCard, ShieldCheck, Zap, Sparkles } from 
 interface LandingProps {
   onNavigate: (view: ViewState) => void;
   onShopLogin?: (details: {name: string, id: string}) => void;
+  onShopSelect?: (details: {name: string, id: string}) => void;
 }
 
-export default function Landing({ onNavigate, onShopLogin }: LandingProps) {
+export default function Landing({ onNavigate, onShopLogin, onShopSelect }: LandingProps) {
   const handleShopLoginClick = () => {
     const pass = prompt("Manager Key Required:");
     if (!pass) return;
@@ -44,6 +45,31 @@ export default function Landing({ onNavigate, onShopLogin }: LandingProps) {
     localStorage.setItem('look2pay_shops', JSON.stringify(storedShops));
 
     alert(`SUCCESS!\n\nShop: ${shopName}\nManager Key: ${generatedPin}\n\nPlease save this key. It is required to access your dashboard.`);
+  };
+
+  const handleStartPayment = () => {
+    // Get all shops (Hardcoded + Dynamically registered)
+    const storedShops = JSON.parse(localStorage.getItem('look2pay_shops') || '[]');
+    const defaultShops = [
+      { id: 's1', name: 'XYZ STORE NAME' },
+      { id: 's2', name: 'CAMPUS STATIONERY' }
+    ];
+    const allShops = [...defaultShops, ...storedShops];
+
+    // Simple selection for demo purposes
+    const shopNames = allShops.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+    const choice = prompt(`SELECT THE SHOP YOU ARE AT:\n\n${shopNames}\n\nEnter the number:`);
+    
+    if (choice) {
+      const index = parseInt(choice) - 1;
+      if (allShops[index]) {
+        // Set the active shop in App.tsx state but don't go to dashboard
+        onShopSelect?.({ name: allShops[index].name, id: allShops[index].id });
+        onNavigate('payment-scan');
+      } else {
+        alert("Invalid selection.");
+      }
+    }
   };
 
   return (
@@ -126,7 +152,7 @@ export default function Landing({ onNavigate, onShopLogin }: LandingProps) {
           className="flex flex-col sm:flex-row gap-4 w-full max-w-lg px-6"
         >
           <button
-            onClick={() => onNavigate('payment-scan')}
+            onClick={handleStartPayment}
             className="flex-1 px-10 py-5 bg-slate-900 text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-blue-600 hover:scale-105 transition-all flex items-center justify-center gap-3 group shadow-2xl shadow-blue-100"
           >
             <Zap size={16} className="fill-current" />

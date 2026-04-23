@@ -76,9 +76,9 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
   const stats = useMemo(() => {
     const totalRev = allTransactions.reduce((acc, t) => acc + (t.status === 'success' ? t.amount : 0), 0);
     return [
-      { label: 'Pilot Day Rev', value: `₹${totalRev.toLocaleString()}`, change: '+12.5%', isUp: true, icon: <TrendingUp className="w-5 h-5 text-blue-500" /> },
-      { label: 'Total Volume', value: `₹${totalRev.toLocaleString()}`, change: '+5.2%', isUp: true, icon: <LayoutDashboard className="w-5 h-5 text-blue-500" /> },
-      { label: 'Enrolled Nodes', value: customers.length.toString(), change: '+4.1%', isUp: true, icon: <Users className="w-5 h-5 text-blue-500" /> },
+      { label: 'Today\'s Sales', value: `₹${totalRev.toLocaleString()}`, change: '+12.5%', isUp: true, icon: <TrendingUp className="w-5 h-5 text-blue-500" /> },
+      { label: 'Total Sales', value: `₹${totalRev.toLocaleString()}`, change: '+5.2%', isUp: true, icon: <LayoutDashboard className="w-5 h-5 text-blue-500" /> },
+      { label: 'Regular Customers', value: customers.length.toString(), change: '+4.1%', isUp: true, icon: <Users className="w-5 h-5 text-blue-500" /> },
     ];
   }, [allTransactions, customers]);
 
@@ -138,7 +138,6 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
             <span className="flex items-center gap-1 font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> System Active
             </span>
-            <span className="px-2 py-1 bg-amber-50 text-amber-600 font-bold text-[10px] uppercase rounded border border-amber-100">Student Pilot Prototype</span>
             <span className="hidden md:inline">Monday, Oct 23, 2023</span>
           </div>
           
@@ -152,9 +151,15 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
             </button>
             <button 
               onClick={() => onNavigate('customer-register')}
-              className="px-4 py-1.5 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+              className="px-4 py-1.5 text-sm font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
             >
-              Register New Customer
+              Add Customer
+            </button>
+            <button 
+              onClick={() => onNavigate('payment-scan')}
+              className="px-4 py-1.5 text-sm font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 shadow-sm transition-all"
+            >
+              Launch Terminal
             </button>
           </div>
         </header>
@@ -243,7 +248,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                         <div className="space-y-6">
                           <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Deposits</p>
-                            <p className="text-4xl font-black text-slate-900 tracking-tighter">₹84,200.00</p>
+                            <p className="text-4xl font-black text-slate-900 tracking-tighter">₹1,000.00</p>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-3">
@@ -268,14 +273,13 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                             </div>
                             
                             <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar scroll-smooth">
-                                <p><span className="text-slate-500">[14:32:01]</span> <span className="text-emerald-500/60">INIT:</span> Loading Face Landmark 68 Model...</p>
-                                <p><span className="text-slate-500">[14:32:02]</span> <span className="text-emerald-500/60">OK:</span> Weights extraction complete (20.4MB)</p>
-                                <p><span className="text-slate-500">[14:32:05]</span> <span className="text-blue-500/60">AUTH:</span> Terminal 082 Online (Bengaluru Node)</p>
-                                <p><span className="text-slate-500">[15:01:10]</span> <span className="text-blue-400">MATH:</span> Euclidean Match Found (Dist: 0.321)</p>
-                                <p><span className="text-slate-500">[15:01:10]</span> <span className="text-emerald-500/60">VERIFY:</span> Liveliness pass - EAR: 0.28 (Satisfied)</p>
-                                <p><span className="text-slate-500">[15:01:11]</span> <span className="text-blue-400">LEGER:</span> Transaction TXN-8F2 Approved</p>
-                                <p><span className="text-slate-500">[15:04:45]</span> <span className="text-slate-400">IDLE:</span> Waiting for biometric trigger...</p>
-                                <p><span className="text-slate-500">[15:04:45]</span> <span className="text-amber-500/60">WARN:</span> Low lighting detected at Node_082</p>
+                                <p><span className="text-slate-500">[14:32:01]</span> <span className="text-emerald-500/60">SYSTEM:</span> AI Models loaded successfully</p>
+                                <p><span className="text-slate-500">[14:32:02]</span> <span className="text-emerald-500/60">OK:</span> Biometric database is active</p>
+                                <p><span className="text-slate-500">[14:32:05]</span> <span className="text-blue-500/60">SECURE:</span> Terminal 082 Online and scanning</p>
+                                <p><span className="text-slate-500">[15:01:10]</span> <span className="text-blue-400">MATH:</span> Face match verified (Conf: 98%)</p>
+                                <p><span className="text-slate-500">[15:01:10]</span> <span className="text-emerald-500/60">SENSE:</span> Customer blink detected (Liveliness OK)</p>
+                                <p><span className="text-slate-500">[15:01:11]</span> <span className="text-blue-400">BANK:</span> Digital payment authorized</p>
+                                <p><span className="text-slate-500">[15:04:45]</span> <span className="text-slate-400">IDLE:</span> Ready for next customer...</p>
                                 <p className="animate-pulse shadow-blue-500/20">_</p>
                             </div>
                           </div>
@@ -417,26 +421,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
             )}
           </AnimatePresence>
 
-          {/* Project Abstract - B.Tech Feel */}
-          <div className="mt-12 pt-8 border-t border-slate-200">
-             <div className="bg-slate-100 p-8 rounded-2xl flex flex-col md:flex-row gap-12 items-center">
-                <div className="flex-1 text-left">
-                   <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Project Technical Abstract</h4>
-                   <p className="text-[11px] text-slate-500 leading-relaxed italic mb-4">
-                      "Look2Pay is a biometric financial authentication system developed as a Final Year Project to address the limitations of OTP and QR-based payments in low-connectivity retail environments. The system utilizes a quantized SSD model for face localization and an inception-inspired CNN to extract a localized 128-dimensional embedding. Security is bolstered via a real-time Eye Aspect Ratio (EAR) algorithm for anti-spoofing liveliness verification."
-                   </p>
-                   <div className="flex gap-4">
-                      <div className="px-2 py-1 bg-white border border-slate-200 rounded text-[9px] font-bold text-slate-400">STACK: REACT / FACE-API.JS / TAILWIND / MOTION</div>
-                      <div className="px-2 py-1 bg-white border border-slate-200 rounded text-[9px] font-bold text-slate-400">DOMAIN: COMPUTER VISION / FINTECH</div>
-                   </div>
-                </div>
-                <div className="w-full md:w-fit text-right">
-                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Developer Credentials</p>
-                   <p className="text-sm font-bold text-slate-800">Final Year B.Tech Project</p>
-                   <p className="text-xs text-slate-500">Department of Computer Science</p>
-                </div>
-             </div>
-          </div>
+          {/* Project Abstract Removed as requested */}
         </div>
       </main>
 

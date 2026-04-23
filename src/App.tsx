@@ -24,6 +24,10 @@ export default function App() {
     setView('shop-dashboard');
   };
 
+  const handleShopSelect = (details: {name: string, id: string}) => {
+    setActiveShop(details);
+  };
+
   useEffect(() => {
     loadModels()
       .then(() => setModelsLoaded(true))
@@ -61,7 +65,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100">
       <AnimatePresence mode="wait">
         {view === 'landing' && (
-          <Landing key="landing" onNavigate={setView} onShopLogin={handleShopLogin} />
+          <Landing key="landing" onNavigate={setView} onShopLogin={handleShopLogin} onShopSelect={handleShopSelect} />
         )}
         {view === 'shop-dashboard' && (
           <ShopDashboard key="shop-dashboard" onNavigate={setView} shop={activeShop} />
@@ -70,7 +74,7 @@ export default function App() {
           <CustomerRegister key="customer-register" onNavigate={setView} />
         )}
         {view === 'payment-scan' && (
-          <PaymentScan key="payment-scan" onNavigate={setView} />
+          <PaymentScan key="payment-scan" onNavigate={setView} shop={activeShop} />
         )}
       </AnimatePresence>
     </div>
