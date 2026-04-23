@@ -1,0 +1,8 @@
+{
+  "name": "Look2Pay-Final Year Project",
+  "description": "Facial recognition-based payment system for shopkeepers and customers, featuring secure face embeddings and liveliness detection.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
