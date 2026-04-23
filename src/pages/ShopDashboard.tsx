@@ -24,9 +24,10 @@ import {
 
 interface ShopDashboardProps {
   onNavigate: (view: ViewState) => void;
+  shop: { name: string, id: string };
 }
 
-export default function ShopDashboard({ onNavigate }: ShopDashboardProps) {
+export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'customers'>('overview');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,33 +49,36 @@ export default function ShopDashboard({ onNavigate }: ShopDashboardProps) {
       faceDescriptor: c.embedding
     }));
 
-    // Example/Seed data if empty
-    if (formattedCustomers.length === 0) {
+    // Example/Seed data ONLY for Shop s1 (the XYZ store)
+    if (formattedCustomers.length === 0 && shop.id === 's1') {
       formattedCustomers.push(
-        { id: '9876543210', name: 'John Doe', phoneNumber: '+91 9876543210', walletBalance: 4250, transactionCount: 2, createdAt: { seconds: 1672531200, nanoseconds: 0 } as any, faceDescriptor: [] },
-        { id: '8765432109', name: 'Sarah Miller', phoneNumber: '+91 8765432109', walletBalance: 12400, transactionCount: 5, createdAt: { seconds: 1675209600, nanoseconds: 0 } as any, faceDescriptor: [] }
+        { id: '9876543210', name: 'Rahul Sharma (Hostel-4)', phoneNumber: '+91 9876543210', walletBalance: 450, transactionCount: 12, createdAt: { seconds: 1672531200, nanoseconds: 0 } as any, faceDescriptor: [] },
+        { id: '8765432109', name: 'Ananya Iyer (CSE Dept)', phoneNumber: '+91 8765432109', walletBalance: 1200, transactionCount: 8, createdAt: { seconds: 1675209600, nanoseconds: 0 } as any, faceDescriptor: [] }
       );
     }
 
-    if (storedTransactions.length === 0) {
-       storedTransactions.push(
-         { id: 'TXN-ABC123', shopId: 's1', customerId: '9876543210', customerName: 'John Doe', amount: 1250, timestamp: { seconds: Date.now()/1000 - 3600, nanoseconds: 0 } as any, status: 'success' },
-         { id: 'TXN-XYZ789', shopId: 's1', customerId: '8765432109', customerName: 'Sarah Miller', amount: 6400, timestamp: { seconds: Date.now()/1000 - 7200, nanoseconds: 0 } as any, status: 'success' }
+    // Filter transactions to only ones for this shop
+    const shopTransactions = (storedTransactions as Transaction[]).filter(t => t.shopId === shop.id);
+
+    if (shopTransactions.length === 0 && shop.id === 's1') {
+       shopTransactions.push(
+         { id: 'TXN-A001', shopId: 's1', customerId: '9876543210', customerName: 'Rahul Sharma', amount: 45, timestamp: { seconds: Date.now()/1000 - 3600, nanoseconds: 0 } as any, status: 'success' },
+         { id: 'TXN-A002', shopId: 's1', customerId: '8765432109', customerName: 'Ananya Iyer', amount: 120, timestamp: { seconds: Date.now()/1000 - 7200, nanoseconds: 0 } as any, status: 'success' }
        );
     }
 
     return { 
       customers: formattedCustomers, 
-      allTransactions: storedTransactions as Transaction[] 
+      allTransactions: shopTransactions
     };
-  }, []);
+  }, [shop.id]);
 
   const stats = useMemo(() => {
     const totalRev = allTransactions.reduce((acc, t) => acc + (t.status === 'success' ? t.amount : 0), 0);
     return [
-      { label: 'Daily Revenue', value: `₹${totalRev.toLocaleString()}`, change: '+12.5%', isUp: true, icon: <TrendingUp className="w-5 h-5 text-blue-500" /> },
-      { label: 'Monthly Total', value: `₹${(totalRev * 1.2).toLocaleString()}`, change: '+5.2%', isUp: true, icon: <LayoutDashboard className="w-5 h-5 text-blue-500" /> },
-      { label: 'Customers', value: customers.length.toString(), change: '+4.1%', isUp: true, icon: <Users className="w-5 h-5 text-blue-500" /> },
+      { label: 'Pilot Day Rev', value: `₹${totalRev.toLocaleString()}`, change: '+12.5%', isUp: true, icon: <TrendingUp className="w-5 h-5 text-blue-500" /> },
+      { label: 'Total Volume', value: `₹${totalRev.toLocaleString()}`, change: '+5.2%', isUp: true, icon: <LayoutDashboard className="w-5 h-5 text-blue-500" /> },
+      { label: 'Enrolled Nodes', value: customers.length.toString(), change: '+4.1%', isUp: true, icon: <Users className="w-5 h-5 text-blue-500" /> },
     ];
   }, [allTransactions, customers]);
 
@@ -119,8 +123,8 @@ export default function ShopDashboard({ onNavigate }: ShopDashboardProps) {
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-xs border border-slate-600 uppercase">RK</div>
              <div>
-                <p className="text-sm font-medium text-white">Rajesh Kumar</p>
-                <p className="text-xs opacity-50">General Store #402</p>
+                <p className="text-sm font-medium text-white">Manager Access</p>
+                <p className="text-xs opacity-50">{shop.name}</p>
              </div>
           </div>
         </div>
@@ -134,6 +138,7 @@ export default function ShopDashboard({ onNavigate }: ShopDashboardProps) {
             <span className="flex items-center gap-1 font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> System Active
             </span>
+            <span className="px-2 py-1 bg-amber-50 text-amber-600 font-bold text-[10px] uppercase rounded border border-amber-100">Student Pilot Prototype</span>
             <span className="hidden md:inline">Monday, Oct 23, 2023</span>
           </div>
           

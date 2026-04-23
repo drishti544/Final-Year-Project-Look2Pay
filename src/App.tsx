@@ -15,8 +15,14 @@ import { Loader2 } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState<ViewState>('landing');
+  const [activeShop, setActiveShop] = useState<{name: string, id: string}>({name: 'XYZ STORE NAME', id: 's1'});
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+
+  const handleShopLogin = (details: {name: string, id: string}) => {
+    setActiveShop(details);
+    setView('shop-dashboard');
+  };
 
   useEffect(() => {
     loadModels()
@@ -55,10 +61,10 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100">
       <AnimatePresence mode="wait">
         {view === 'landing' && (
-          <Landing key="landing" onNavigate={setView} />
+          <Landing key="landing" onNavigate={setView} onShopLogin={handleShopLogin} />
         )}
         {view === 'shop-dashboard' && (
-          <ShopDashboard key="shop-dashboard" onNavigate={setView} />
+          <ShopDashboard key="shop-dashboard" onNavigate={setView} shop={activeShop} />
         )}
         {view === 'customer-register' && (
           <CustomerRegister key="customer-register" onNavigate={setView} />

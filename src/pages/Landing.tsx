@@ -4,9 +4,48 @@ import { Camera, Store, UserPlus, CreditCard, ShieldCheck, Zap, Sparkles } from 
 
 interface LandingProps {
   onNavigate: (view: ViewState) => void;
+  onShopLogin?: (details: {name: string, id: string}) => void;
 }
 
-export default function Landing({ onNavigate }: LandingProps) {
+export default function Landing({ onNavigate, onShopLogin }: LandingProps) {
+  const handleShopLoginClick = () => {
+    const pass = prompt("Manager Key Required:");
+    if (!pass) return;
+
+    // Check localStorage for dynamically registered shops
+    const storedShops = JSON.parse(localStorage.getItem('look2pay_shops') || '[]');
+    const shop = storedShops.find((s: any) => s.pin === pass);
+
+    if (shop) {
+      onShopLogin?.({ name: shop.name, id: shop.id });
+      return;
+    }
+
+    // Default prototype logins
+    if (pass === "1234") {
+      onShopLogin?.({ name: 'XYZ STORE NAME', id: 's1' });
+    } else if (pass === "9999") {
+      onShopLogin?.({ name: 'CAMPUS STATIONERY', id: 's2' });
+    } else {
+      alert("Invalid Access Protocol. No shop found for this key.");
+    }
+  };
+
+  const handleRegisterShop = () => {
+    const shopName = prompt("Enter New Shop Name:");
+    if (!shopName) return;
+
+    // Generate a secure random 4-digit PIN
+    const generatedPin = Math.floor(1000 + Math.random() * 9000).toString();
+    const shopId = 's_' + Date.now();
+
+    const storedShops = JSON.parse(localStorage.getItem('look2pay_shops') || '[]');
+    storedShops.push({ id: shopId, name: shopName, pin: generatedPin });
+    localStorage.setItem('look2pay_shops', JSON.stringify(storedShops));
+
+    alert(`SUCCESS!\n\nShop: ${shopName}\nManager Key: ${generatedPin}\n\nPlease save this key. It is required to access your dashboard.`);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#fafbfc] selection:bg-blue-100 selection:text-blue-900">
       {/* Decorative Background Elements */}
@@ -27,12 +66,21 @@ export default function Landing({ onNavigate }: LandingProps) {
             <div className="fallback-logo hidden w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-xs">L2P</div>
             <span className="font-black text-xl tracking-tighter text-slate-900">LOOK2PAY</span>
           </div>
-          <button 
-            onClick={() => onNavigate('shop-dashboard')}
-            className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm"
-          >
-            Shop Login
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleRegisterShop}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-sm flex items-center gap-2"
+            >
+              <Store size={12} />
+              Register Shop
+            </button>
+            <button 
+              onClick={handleShopLoginClick}
+              className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+            >
+              Shop Login
+            </button>
+          </div>
         </div>
       </header>
 
@@ -135,7 +183,7 @@ export default function Landing({ onNavigate }: LandingProps) {
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-6">Shopkeeper Dashboard</h2>
           <p className="text-slate-400 mb-12 max-w-lg mx-auto text-base">Check your total sales, manage customer balances, and view payment history all in one place.</p>
           <button
-            onClick={() => onNavigate('shop-dashboard')}
+            onClick={handleShopLoginClick}
             className="px-12 py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 hover:text-white transition-all shadow-xl active:scale-95"
           >
             Go to Dashboard
