@@ -81,23 +81,20 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
           // Logic for blink
           if (livelinessRef.current.instruction === 'blink' && isBlinking(detection.landmarks)) {
             blinkDetected = true;
-            setLivelinessInstruction('shake');
           } 
-          
-          // Logic for simple head motion (shake) - using landmark box shifts
-          if (livelinessRef.current.instruction === 'shake') {
-            // Simulated motion check for proto - higher probability for better UX
-            if (Math.random() > 0.7) motionDetected = true;
-          }
         }
       } catch (e) {
         console.error("Liveliness tracking error", e);
       }
 
-      if (blinkDetected && motionDetected) {
-        setLivelinessInstruction('none'); // Clear message
+      if (blinkDetected) {
+        setLivelinessInstruction('none'); 
         setLivelinessPass(true);
         livelinessRef.current.passed = true;
+        // AUTOMATIC FINALIZE
+        setTimeout(() => {
+          handleFinalize();
+        }, 800);
       } else {
         requestAnimationFrame(checkLoop);
       }
@@ -205,10 +202,12 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       colors: ['#2563eb', '#10b981', '#141414']
     });
 
-    // Auto-redirect to home after 6 seconds
-    setTimeout(() => {
+    // Auto-redirect to home after 5 seconds
+    const redirectTimer = setTimeout(() => {
       onNavigate('landing');
-    }, 6000);
+    }, 5000);
+
+    return () => clearTimeout(redirectTimer);
   };
 
   return (
@@ -357,15 +356,15 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                   
                   {/* Liveliness Instructions Overlay */}
                   <AnimatePresence>
-                    {livelinessInstruction !== 'none' && step === 'verify' && (
+                    {livelinessInstruction === 'blink' && step === 'verify' && (
                       <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute bottom-8 left-0 right-0 flex justify-center px-6"
+                        className="absolute bottom-6 left-0 right-0 flex justify-center px-6"
                       >
-                         <div className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl border-b-4 border-blue-800 active:translate-y-1 transition-all">
-                            {livelinessInstruction === 'blink' ? "Action Required: BLINK YOUR EYES" : "Action Required: SHAKE YOUR HEAD"}
+                         <div className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl border-b-4 border-blue-800 animate-pulse">
+                            Action Required: BLINK YOUR EYES
                          </div>
                       </motion.div>
                     )}
@@ -417,7 +416,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                        onClick={handleFinalize}
                        className="flex-[0.6] bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-20 disabled:grayscale group shadow-xl"
                      >
-                        {livelinessPass ? "CONFIRM" : "VERIFYING"}
+                        {livelinessPass ? "PAYING..." : "WAITING"}
                      </button>
                    )}
                 </div>
@@ -556,47 +555,45 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                 </div>
               </div>
 
-              {matchedCustomerTransactions.length > 0 && (
-                <div className="w-full max-w-sm mb-10 text-left px-4">
-                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2">Account Activity</p>
-                   <div className="space-y-3">
-                      {/* Show the latest one first (manually added for display since state updates might not be instant in the list) */}
-                      <div className="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                               <CheckCircle2 size={16} />
-                            </div>
-                            <div>
-                               <p className="text-xs font-black text-slate-800 uppercase">Current Payment</p>
-                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SUCCESSFUL • JUST NOW</p>
-                            </div>
+              <div className="w-full max-w-sm mb-10 text-left px-4">
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2">Account Activity</p>
+                 <div className="space-y-3">
+                    {/* Current Payment - Always Show */}
+                    <div className="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                             <CheckCircle2 size={16} />
                           </div>
-                          <span className="text-sm font-black text-blue-600">₹{parseFloat(amount).toLocaleString()}</span>
-                      </div>
+                          <div>
+                             <p className="text-xs font-black text-slate-800 uppercase">Current Payment</p>
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SUCCESSFUL • JUST NOW</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-black text-blue-600">₹{parseFloat(amount).toLocaleString()}</span>
+                    </div>
 
-                      {matchedCustomerTransactions.map((tx: any) => (
-                         <div key={tx.id} className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                            <div className="flex items-center gap-3">
-                               <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-slate-400 border border-slate-100">
-                                  <ShieldCheck size={14} />
-                               </div>
-                               <div>
-                                  <p className="text-[10px] font-black text-slate-600 uppercase">{tx.id}</p>
-                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SECURE NODE TRANSFER</p>
-                               </div>
-                            </div>
-                            <span className="text-sm font-black text-slate-900 opacity-60">₹{tx.amount}</span>
-                         </div>
-                      ))}
-                   </div>
-                </div>
-              )}
+                    {matchedCustomerTransactions.map((tx: any) => (
+                       <div key={tx.id} className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-slate-400 border border-slate-100">
+                                <ShieldCheck size={14} />
+                             </div>
+                             <div>
+                                <p className="text-[10px] font-black text-slate-600 uppercase">{tx.id}</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SECURE NODE TRANSFER</p>
+                             </div>
+                          </div>
+                          <span className="text-sm font-black text-slate-900 opacity-60">₹{tx.amount}</span>
+                       </div>
+                    ))}
+                 </div>
+              </div>
 
               <button
                 onClick={() => onNavigate('landing')}
                 className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-100"
               >
-                Finish & Close (6s)
+                Done (Redirecting in 5s...)
               </button>
             </motion.div>
           )}
