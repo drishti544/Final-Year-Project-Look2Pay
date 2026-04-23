@@ -86,8 +86,8 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
           
           // Logic for simple head motion (shake) - using landmark box shifts
           if (livelinessRef.current.instruction === 'shake') {
-            // Simulated motion check for proto - real one would track jaw points
-            if (Math.random() > 0.95) motionDetected = true;
+            // Simulated motion check for proto - higher probability for better UX
+            if (Math.random() > 0.7) motionDetected = true;
           }
         }
       } catch (e) {
@@ -95,7 +95,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       }
 
       if (blinkDetected && motionDetected) {
-        setLivelinessInstruction('none');
+        setLivelinessInstruction('none'); // Clear message
         setLivelinessPass(true);
         livelinessRef.current.passed = true;
       } else {
@@ -176,7 +176,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
     const newTransaction = {
       id: transactionId,
       shopId: shop.id,
-      customerId: matchedCustomer.phone, // Using phone as unique ID in this demo
+      customerId: matchedCustomer.phone, 
       customerName: matchedCustomer.name,
       amount: parseFloat(amount),
       timestamp: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
@@ -188,7 +188,10 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
 
     const updated = customers.map((c: any) => {
       if (c.phone === matchedCustomer.phone) {
-        return { ...c, wallet: c.wallet - parseFloat(amount), transactionCount: (c.transactionCount || 0) + 1 };
+        const newBalance = c.wallet - parseFloat(amount);
+        // Store current match with updated wallet for display
+        setMatchedCustomer({ ...c, wallet: newBalance });
+        return { ...c, wallet: newBalance, transactionCount: (c.transactionCount || 0) + 1 };
       }
       return c;
     });
@@ -201,6 +204,11 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       origin: { y: 0.6 },
       colors: ['#2563eb', '#10b981', '#141414']
     });
+
+    // Auto-redirect to home after 6 seconds
+    setTimeout(() => {
+      onNavigate('landing');
+    }, 6000);
   };
 
   return (
@@ -510,7 +518,9 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                 <CheckCircle2 className="w-12 h-12" />
               </div>
               <h3 className="text-4xl font-black uppercase mb-2 tracking-tight text-slate-900">Success!</h3>
-              <p className="text-slate-500 mb-10 font-medium">Payment received at {shop.name}.</p>
+              <div className="bg-emerald-50 text-emerald-700 px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-8 border border-emerald-100">
+                 ₹{parseFloat(amount).toLocaleString()} deducted from wallet
+              </div>
               
               <div className="w-full bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl mb-10 text-left overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
@@ -532,6 +542,10 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                     <span className="text-sm font-bold text-slate-800">{matchedCustomer?.name}</span>
                   </div>
                   <div className="flex justify-between items-baseline">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Available Balance</span>
+                    <span className="text-sm font-bold text-emerald-600">₹{matchedCustomer?.wallet?.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Wallet Used</span>
                     <span className="text-sm font-bold text-slate-800">Biometric Secure Node</span>
                   </div>
@@ -542,11 +556,47 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                 </div>
               </div>
 
+              {matchedCustomerTransactions.length > 0 && (
+                <div className="w-full max-w-sm mb-10 text-left px-4">
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2">Account Activity</p>
+                   <div className="space-y-3">
+                      {/* Show the latest one first (manually added for display since state updates might not be instant in the list) */}
+                      <div className="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                               <CheckCircle2 size={16} />
+                            </div>
+                            <div>
+                               <p className="text-xs font-black text-slate-800 uppercase">Current Payment</p>
+                               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SUCCESSFUL • JUST NOW</p>
+                            </div>
+                          </div>
+                          <span className="text-sm font-black text-blue-600">₹{parseFloat(amount).toLocaleString()}</span>
+                      </div>
+
+                      {matchedCustomerTransactions.map((tx: any) => (
+                         <div key={tx.id} className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                            <div className="flex items-center gap-3">
+                               <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-slate-400 border border-slate-100">
+                                  <ShieldCheck size={14} />
+                               </div>
+                               <div>
+                                  <p className="text-[10px] font-black text-slate-600 uppercase">{tx.id}</p>
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SECURE NODE TRANSFER</p>
+                               </div>
+                            </div>
+                            <span className="text-sm font-black text-slate-900 opacity-60">₹{tx.amount}</span>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+              )}
+
               <button
                 onClick={() => onNavigate('landing')}
                 className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-100"
               >
-                Go to Home
+                Finish & Close (6s)
               </button>
             </motion.div>
           )}
