@@ -1,6 +1,7 @@
-import { motion } from 'motion/react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ViewState } from '../types';
-import { Camera, Store, UserPlus, CreditCard, ShieldCheck, Zap, Sparkles } from 'lucide-react';
+import { Camera, Store, UserPlus, CreditCard, ShieldCheck, Zap, Sparkles, X, Key, AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface LandingProps {
   onNavigate: (view: ViewState) => void;
@@ -9,8 +10,17 @@ interface LandingProps {
 }
 
 export default function Landing({ onNavigate, onShopLogin, onShopSelect }: LandingProps) {
+  const [loginModal, setLoginModal] = useState<'none' | 'login' | 'forgot'>('none');
+  const [loginPin, setLoginPin] = useState('');
+  const [recoveryId, setRecoveryId] = useState('');
+  const [recoveryResult, setRecoveryResult] = useState<string | null>(null);
+
   const handleShopLoginClick = () => {
-    const pass = prompt("Manager Key Required:");
+    setLoginModal('login');
+  };
+
+  const handleExecuteLogin = () => {
+    const pass = loginPin;
     if (!pass) return;
 
     // Check localStorage for dynamically registered shops
@@ -19,16 +29,34 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
 
     if (shop) {
       onShopLogin?.({ name: shop.name, id: shop.id });
+      setLoginModal('none');
       return;
     }
 
     // Default prototype logins
     if (pass === "1234") {
       onShopLogin?.({ name: 'XYZ STORE NAME', id: 's1' });
+      setLoginModal('none');
     } else if (pass === "9999") {
       onShopLogin?.({ name: 'CAMPUS STATIONERY', id: 's2' });
+      setLoginModal('none');
     } else {
       alert("Invalid Access Protocol. No shop found for this key.");
+    }
+  };
+
+  const handleRecoverKey = () => {
+    const storedShops = JSON.parse(localStorage.getItem('look2pay_shops') || '[]');
+    const shop = storedShops.find((s: any) => s.id.toLowerCase() === recoveryId.toLowerCase());
+
+    if (shop) {
+      setRecoveryResult(shop.pin);
+    } else if (recoveryId.toLowerCase() === 's1') {
+       setRecoveryResult('1234');
+    } else if (recoveryId.toLowerCase() === 's2') {
+       setRecoveryResult('9999');
+    } else {
+      alert("No shop records found for this ID.");
     }
   };
 
@@ -109,6 +137,126 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
           </div>
         </div>
       </header>
+
+      {/* Login / Recovery Modals */}
+      <AnimatePresence>
+        {loginModal !== 'none' && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-0">
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setLoginModal('none')}
+               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-8 overflow-hidden"
+            >
+              <button 
+                onClick={() => setLoginModal('none')}
+                className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              {loginModal === 'login' ? (
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <Key size={32} />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Shop Access</h3>
+                  <p className="text-slate-500 text-sm mb-8 font-medium">Enter your 4-digit Manager Key to access the dashboard.</p>
+                  
+                  <input
+                    type="password"
+                    maxLength={4}
+                    autoFocus
+                    placeholder="••••"
+                    value={loginPin}
+                    onChange={(e) => setLoginPin(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleExecuteLogin()}
+                    className="w-full text-center text-4xl font-black py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-600 transition-all mb-6 tracking-[0.5em]"
+                  />
+
+                  <button
+                    onClick={handleExecuteLogin}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-600 transition-all active:scale-95 mb-4"
+                  >
+                    Authenticate
+                  </button>
+
+                  <button
+                    onClick={() => setLoginModal('forgot')}
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors"
+                  >
+                    Forgot Shop Key?
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <AlertCircle size={32} />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Key Recovery</h3>
+                  <p className="text-slate-500 text-sm mb-8 font-medium">Enter your unique Shop ID to recover your manager key.</p>
+                  
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Shop ID (e.g. s1)"
+                    value={recoveryId}
+                    onChange={(e) => setRecoveryId(e.target.value)}
+                    className="w-full text-center text-xl font-black py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-amber-500 transition-all mb-6 uppercase tracking-widest"
+                  />
+
+                  {recoveryResult ? (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl mb-6 text-left"
+                    >
+                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Recovery Success</p>
+                      <p className="text-lg font-black text-emerald-900 leading-none">KEY: {recoveryResult}</p>
+                      <button 
+                        onClick={() => {
+                          setLoginPin(recoveryResult);
+                          setLoginModal('login');
+                          setRecoveryResult(null);
+                        }}
+                        className="mt-3 text-[10px] font-bold text-emerald-700 underline uppercase tracking-widest"
+                      >
+                        Use this key →
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <button
+                      onClick={handleRecoverKey}
+                      className="w-full py-4 bg-amber-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-amber-700 transition-all active:scale-95 mb-4"
+                    >
+                      Verify Shop ID
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setLoginModal('login');
+                      setRecoveryResult(null);
+                    }}
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors flex items-center justify-center gap-2 mx-auto"
+                  >
+                    <ArrowLeft size={10} />
+                    Back to Login
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Hero Section */}
       <section className="relative z-10 px-6 py-24 md:py-40 flex flex-col items-center text-center">
