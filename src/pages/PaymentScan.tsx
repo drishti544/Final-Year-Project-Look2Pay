@@ -393,18 +393,18 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                              
                              return (
                                <>
-                                 {/* Primary Oval Frame */}
+                                 {/* Primary Oval Frame - Refined & Simple */}
                                  <motion.div 
                                    animate={{ 
                                      borderColor: statusColor,
-                                     scale: isAnalyzing ? [1, 1.02, 1] : 1,
-                                     boxShadow: `0 0 20px ${statusColor}11`
+                                     scale: isAnalyzing ? [1, 1.01, 1] : 1,
+                                     boxShadow: `0 0 15px ${statusColor}11`
                                    }}
                                    transition={{ 
-                                     borderColor: { duration: 0.5 },
+                                     borderColor: { duration: 0.3 },
                                      scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                                    }}
-                                   className="absolute inset-0 rounded-[4rem] border-[2px] z-10"
+                                   className="absolute inset-0 rounded-[3.5rem] border-[2px] z-10 transition-colors duration-300"
                                  />
                                </>
                              );

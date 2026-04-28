@@ -47,8 +47,8 @@ export function isBlinking(landmarks: faceapi.FaceLandmarks68) {
   const rightEAR = getEAR(rightEye);
   const avgEAR = (leftEAR + rightEAR) / 2;
 
-  // Threshold for blink is typically 0.2
-  return avgEAR < 0.26;
+  // Threshold for blink is typically 0.2, increasing to 0.3 for high sensitivity
+  return avgEAR < 0.30;
 }
 
 export function isSmiling(landmarks: faceapi.FaceLandmarks68) {
