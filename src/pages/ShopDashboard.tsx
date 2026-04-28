@@ -19,7 +19,8 @@ import {
   X,
   User,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck
 } from 'lucide-react';
 
 interface ShopDashboardProps {
@@ -174,33 +175,36 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Header - Professional Polish styling */}
-        <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4 text-slate-500 text-sm">
-            <span className="flex items-center gap-1 font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> System Active
-            </span>
-            <span className="hidden md:inline">Monday, Oct 23, 2023</span>
+        <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0">
+          <div className="flex flex-col">
+            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight leading-none mb-1">{shop.name}</h2>
+            <div className="flex items-center gap-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+              <span className="flex items-center gap-1.5 text-emerald-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Terminal Active
+              </span>
+              <span className="hidden md:inline font-mono">ID: {shop.id.toUpperCase()} • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+            </div>
           </div>
           
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button 
               onClick={() => onNavigate('landing')}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
             >
               <ArrowLeft size={14} />
-              Logout
+              Exit
             </button>
             <button 
               onClick={() => onNavigate('customer-register')}
-              className="px-4 py-1.5 text-sm font-medium text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+              className="px-5 py-2 text-xs font-black text-slate-600 border-2 border-slate-100 rounded-xl hover:bg-slate-50 transition-all uppercase tracking-widest active:scale-95"
             >
-              Add Customer
+              New Client
             </button>
             <button 
               onClick={() => onNavigate('payment-scan')}
-              className="px-4 py-1.5 text-sm font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 shadow-sm transition-all"
+              className="px-5 py-2 text-xs font-black text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all uppercase tracking-widest active:scale-95"
             >
-              Launch Terminal
+              Scanner Terminal
             </button>
           </div>
         </header>
@@ -241,13 +245,13 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                 <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 mt-8">
                   {/* Activity Feed Section */}
                   <div className="xl:col-span-3 space-y-6">
-                      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden text-left">
+                      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden text-left h-full">
                         <div className="p-4 border-b border-slate-100 bg-slate-50/50">
                           <h3 className="font-semibold text-slate-800">Recent Activity</h3>
                         </div>
                         
                         <div className="divide-y divide-slate-50">
-                          {allTransactions.slice(0, 5).map((tx, i) => (
+                          {allTransactions.slice(0, 8).map((tx, i) => (
                             <div 
                               key={i} 
                               onClick={() => {
@@ -278,64 +282,85 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                       </div>
                   </div>
 
-                  {/* System Alert / Inventory Mock */}
+                  {/* Business Financials / Inventory Status */}
                   <div className="xl:col-span-2 space-y-6">
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-clip flex-col h-full ring-1 ring-slate-100 text-left flex">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-semibold text-slate-800 uppercase text-xs tracking-widest">Inventory Status</h4>
-                          <div className="p-1 px-2 bg-emerald-50 text-emerald-600 rounded text-[9px] font-black uppercase">Active Node</div>
+                      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-xl relative overflow-clip flex-col h-full ring-1 ring-slate-100 text-left flex">
+                        <div className="flex items-center justify-between mb-8">
+                          <h4 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.2em]">Financial Overview</h4>
+                          <div className="p-1 px-2 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase tracking-widest">Calculated Real-time</div>
                         </div>
                         
-                        <div className="space-y-6">
+                        <div className="space-y-8">
                           <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Deposits</p>
-                            <p className="text-4xl font-black text-slate-900 tracking-tighter">₹1,000.00</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 opacity-60">Total Business Deposits</p>
+                            <p className="text-5xl font-black text-slate-900 tracking-tighter">₹{(allTransactions.reduce((acc, t) => acc + (t.status === 'success' ? t.amount : 0), 0) + 1000).toLocaleString()}</p>
+                            <p className="text-[10px] font-bold text-emerald-500 mt-2 flex items-center gap-1">
+                              <TrendingUp size={12} />
+                              Healthy liquidity status
+                            </p>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Refunds</p>
-                              <p className="text-base font-bold text-slate-700">₹0</p>
+                          <div className="grid grid-cols-1 gap-4">
+                            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 flex justify-between items-center">
+                              <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Average Order Value</p>
+                                <p className="text-xl font-black text-slate-800">
+                                  ₹{allTransactions.length > 0 
+                                    ? Math.round(allTransactions.reduce((acc, t) => acc + t.amount, 0) / allTransactions.length).toLocaleString() 
+                                    : 0}
+                                </p>
+                              </div>
+                              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm border border-slate-100">
+                                <PieChart size={20} />
+                              </div>
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fees</p>
-                              <p className="text-base font-bold text-slate-700">₹1,240</p>
+
+                            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 flex justify-between items-center">
+                              <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Regulars</p>
+                                <p className="text-xl font-black text-slate-800">{customers.length}</p>
+                              </div>
+                              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-500 shadow-sm border border-slate-100">
+                                <Users size={20} />
+                              </div>
                             </div>
                           </div>
 
-                          {/* System Technical Logs - Highlighting B.Tech Project Logic */}
-                          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm h-64 overflow-clip flex-col font-mono text-[9px] text-blue-400/80 flex">
-                            <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-                              <div className="flex items-center gap-1.5 uppercase font-bold tracking-tighter">
-                                <div className="w-1 h-1 rounded-full bg-blue-500 animate-ping" />
-                                Protocol Logs
-                              </div>
-                              <span className="text-slate-500">v2.0.4-STABLE</span>
-                            </div>
-                            
-                            <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar scroll-smooth">
-                                <p><span className="text-slate-500">[14:32:01]</span> <span className="text-emerald-500/60">SYSTEM:</span> AI Models loaded successfully</p>
-                                <p><span className="text-slate-500">[14:32:02]</span> <span className="text-emerald-500/60">OK:</span> Biometric database is active</p>
-                                <p><span className="text-slate-500">[14:32:05]</span> <span className="text-blue-500/60">SECURE:</span> Terminal 082 Online and scanning</p>
-                                <p><span className="text-slate-500">[15:01:10]</span> <span className="text-blue-400">MATH:</span> Face match verified (Conf: 98%)</p>
-                                <p><span className="text-slate-500">[15:01:10]</span> <span className="text-emerald-500/60">SENSE:</span> Customer blink detected (Liveliness OK)</p>
-                                <p><span className="text-slate-500">[15:01:11]</span> <span className="text-blue-400">BANK:</span> Digital payment authorized</p>
-                                <p><span className="text-slate-500">[15:04:45]</span> <span className="text-slate-400">IDLE:</span> Ready for next customer...</p>
-                                <p className="animate-pulse shadow-blue-500/20">_</p>
-                            </div>
+                          <div className="pt-4 mt-auto">
+                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 opacity-60">Revenue Distribution</p>
+                             <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                                      <span className="text-slate-500">Service Fees</span>
+                                      <span className="text-slate-900">₹1,240</span>
+                                   </div>
+                                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                      <motion.div initial={{ width: 0 }} animate={{ width: '35%' }} className="h-full bg-blue-500 rounded-full" />
+                                   </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
+                                      <span className="text-slate-500">Net Growth</span>
+                                      <span className="text-emerald-500">+12.4%</span>
+                                   </div>
+                                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                      <motion.div initial={{ width: 0 }} animate={{ width: '65%' }} className="h-full bg-emerald-500 rounded-full" />
+                                   </div>
+                                </div>
+                             </div>
                           </div>
 
                           {/* Recent Alert Pattern */}
-                          <div className="p-4 flex items-center gap-3 bg-amber-50 rounded-xl border border-amber-100 mt-4">
-                            <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
-                              <AlertCircle size={14} className="text-amber-600" />
+                          <div className="p-4 flex items-center gap-3 bg-blue-50/50 rounded-2xl border border-blue-100/50 mt-4">
+                            <div className="w-8 h-8 rounded-full bg-white border border-blue-100 flex items-center justify-center shrink-0 shadow-sm">
+                              <ShieldCheck size={14} className="text-blue-600" />
                             </div>
                             <div className="flex-1 text-left">
-                              <p className="text-xs font-semibold text-amber-800">System Alert</p>
-                              <p className="text-[10px] text-amber-600">High Frequency: User 882</p>
+                              <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-0.5">Cloud Sync</p>
+                              <p className="text-[10px] text-blue-500 font-bold uppercase opacity-70">Biometric data secured</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-[10px] text-amber-600 font-bold uppercase">Blocked</p>
+                              <p className="text-[9px] text-blue-600 font-black uppercase tracking-tighter">Verified</p>
                             </div>
                           </div>
                         </div>
