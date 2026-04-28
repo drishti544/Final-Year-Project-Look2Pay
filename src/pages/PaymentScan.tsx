@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { jsPDF } from 'jspdf';
 import { ViewState } from '../types';
 import CameraView from '../components/CameraView';
 import { getFaceEmbedding, compareEmbeddings, detectFace, isBlinking, isSmiling, getFaceOrientation } from '../utils/faceApi';
@@ -13,6 +14,17 @@ interface PaymentScanProps {
 
 type PaymentStep = 'prepare' | 'scan' | 'verify' | 'otp' | 'forgot_pin' | 'processing' | 'success';
 
+// Voice Guidance Utility
+const speak = (text: string) => {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.1;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }
+};
+
 export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
   const [step, setStep] = useState<PaymentStep>('prepare');
   const [amount, setAmount] = useState('0');
@@ -23,18 +35,70 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [isAmbiguous, setIsAmbiguous] = useState(false);
   const [livelinessPass, setLivelinessPass] = useState(false);
-  const [livelinessInstruction, setLivelinessInstruction] = useState<'blink' | 'shake' | 'nod' | 'none'>('none');
+  const [livelinessInstruction, setLivelinessInstruction] = useState<'blink' | 'shake' | 'nod' | 'smile' | 'none'>('none');
+  const [livelinessQueue, setLivelinessQueue] = useState<('blink' | 'shake' | 'nod' | 'smile')[]>([]);
+  const [livelinessFailures, setLivelinessFailures] = useState(0);
   const [otp, setOtp] = useState(['', '', '', '']);
   const [smsOtp, setSmsOtp] = useState(['', '', '', '', '', '']);
   const [isSendingSms, setIsSendingSms] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const livelinessRef = useRef<{ instruction: 'blink' | 'shake' | 'nod' | 'none', passed: boolean }>({ instruction: 'none', passed: false });
+  const livelinessRef = useRef<{ instruction: 'blink' | 'shake' | 'nod' | 'smile' | 'none', passed: boolean }>({ instruction: 'none', passed: false });
 
   // Update ref when state changes so the loop can see it
   useEffect(() => {
     livelinessRef.current.instruction = livelinessInstruction;
-  }, [livelinessInstruction]);
+    // Trigger voice guidance when instructions change
+    if (livelinessInstruction === 'blink') speak("Please blink your eyes");
+    if (livelinessInstruction === 'nod') speak("Please nod your head up and down");
+    if (livelinessInstruction === 'shake') speak("Please shake your head left and right");
+    if (livelinessInstruction === 'smile') speak("Now, give us a big smile");
+    if (livelinessInstruction === 'none' && step === 'verify' && livelinessPass) speak("Biometric verification successful");
+  }, [livelinessInstruction, livelinessPass, step]);
+
+  const generateReceipt = () => {
+    if (!matchedCustomer) return;
+    const doc = new jsPDF();
+    const dateStr = new Date().toLocaleString();
+    
+    // Receipt Design
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text(shop.name.toUpperCase(), 105, 30, { align: 'center' });
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`TERMINAL ID: ${shop.id.toUpperCase()}`, 105, 38, { align: 'center' });
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 45, 190, 45); // Divider
+    
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("TRANSACTION SUCCESSFUL", 105, 60, { align: 'center' });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`DATE: ${dateStr}`, 20, 80);
+    doc.text(`CUSTOMER: ${matchedCustomer.name}`, 20, 90);
+    doc.text(`TRANS ID: ${transactionId || 'N/A'}`, 20, 100);
+    doc.text(`METHOD: BIOMETRIC (LOOK2PAY)`, 20, 110);
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(`AMOUNT PAID: RS. ${parseFloat(amount).toLocaleString()}`, 20, 130);
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 140, 190, 140);
+    
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.text("Thank you for using our biometric secure payment system.", 105, 160, { align: 'center' });
+    doc.text("Project Feature: Look2Pay Biometric Terminal", 105, 165, { align: 'center' });
+    
+    doc.save(`Receipt_${matchedCustomer.name.replace(/\s/g, '_')}.pdf`);
+    speak("Receipt downloaded successfully");
+  };
 
   // Handle OTP focus management
   const handleOtpChange = (index: number, value: string) => {
@@ -134,10 +198,9 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
     const runCheck = async () => {
       if (!mounted || !videoRef.current || livelinessPass) return;
 
-      // Global timeout
-      if (Date.now() - startTime > TIMEOUT * 3) {
-        setError("Liveliness verification timeout. Please follow the instructions clearly.");
-        setStep('scan');
+      // Global timeout per instruction
+      if (Date.now() - startTime > TIMEOUT) {
+        handleLivelinessFailure("Verification timeout. Please stay focused.");
         return;
       }
 
@@ -151,20 +214,19 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
             state.initialPose = pose;
           }
 
-          // Case logic for different instructions
+          let instructionPassed = false;
+
+          // Case logic for different randomized instructions
           if (livelinessInstruction === 'blink') {
-            if (isBlinking(landmarks)) {
-              setLivelinessInstruction('nod');
-            }
+            if (isBlinking(landmarks)) instructionPassed = true;
           } 
           else if (livelinessInstruction === 'nod') {
             const relPitch = pose.pitch - state.initialPose.pitch;
-            // More forgiving thresholds (0.08 instead of 0.12)
             if (state.nodStep === 0 && relPitch < -0.08) state.nodStep = 1; 
             else if (state.nodStep === 1 && relPitch > 0.08) state.nodStep = 2; 
             else if (state.nodStep === 2 && Math.abs(relPitch) < 0.04) {
               state.nodStep = 3;
-              setLivelinessInstruction('shake');
+              instructionPassed = true;
             }
           }
           else if (livelinessInstruction === 'shake') {
@@ -173,10 +235,27 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
             else if (state.shakeStep === 1 && relYaw > 0.08) state.shakeStep = 2; 
             else if (state.shakeStep === 2 && Math.abs(relYaw) < 0.04) {
               state.shakeStep = 3;
-              setLivelinessInstruction('none');
-              setLivelinessPass(true);
-              setTimeout(() => handleFinalize(), 800);
+              instructionPassed = true;
             }
+          }
+          else if (livelinessInstruction === 'smile') {
+            if (isSmiling(landmarks)) instructionPassed = true;
+          }
+
+          if (instructionPassed) {
+             const nextQueue = [...livelinessQueue];
+             const nextInstruction = nextQueue.shift();
+             if (nextInstruction) {
+               setLivelinessQueue(nextQueue);
+               setLivelinessInstruction(nextInstruction);
+               state.initialPose = null; // Reset for next instruction
+               state.nodStep = 0;
+               state.shakeStep = 0;
+             } else {
+               setLivelinessInstruction('none');
+               setLivelinessPass(true);
+               setTimeout(() => handleFinalize(), 800);
+             }
           }
         }
       } catch (err) {
@@ -234,7 +313,14 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       
       setIsAnalyzing(false);
       setStep('verify');
-      setLivelinessInstruction('blink');
+
+      // Randomize 2 Instructions from pool
+      const pool: ('blink' | 'shake' | 'nod' | 'smile')[] = ['blink', 'shake', 'nod', 'smile'];
+      const selected = [...pool].sort(() => 0.5 - Math.random()).slice(0, 2);
+      
+      const first = selected.shift()!;
+      setLivelinessQueue(selected);
+      setLivelinessInstruction(first);
       setLivelinessPass(false);
 
     } catch (err: any) {
@@ -243,7 +329,60 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
     }
   };
 
+  const handleLivelinessFailure = (msg: string) => {
+     const newFailures = livelinessFailures + 1;
+     setLivelinessFailures(newFailures);
+     
+     if (newFailures >= 2 && matchedCustomer) {
+        flagFraud({
+           type: 'LIVELINESS_REPEATED_FAILURE',
+           severity: 'high',
+           customerId: matchedCustomer.phone,
+           customerName: matchedCustomer.name,
+           details: 'User failed randomized anti-spoofing challenges twice in one session.'
+        });
+        setError("Security Block: Too many failed liveliness attempts. Biometrics frozen for 10 minutes.");
+        setStep('prepare');
+     } else {
+        setError(msg);
+        setStep('scan');
+     }
+  };
+
+  const flagFraud = (alert: any) => {
+     const alerts = JSON.parse(localStorage.getItem('look2pay_fraud_alerts') || '[]');
+     const newAlert = {
+        ...alert,
+        id: `FRD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        timestamp: new Date().toISOString(),
+        shopId: shop.id
+     };
+     localStorage.setItem('look2pay_fraud_alerts', JSON.stringify([newAlert, ...alerts]));
+  };
+
   const handleFinalize = () => {
+    // Impossible Travel Check (Mock Logic)
+    if (matchedCustomer) {
+      const allTxns = JSON.parse(localStorage.getItem('look2pay_transactions') || '[]');
+      const userLastTxn = allTxns.find((t: any) => t.customerId === matchedCustomer.phone && t.status === 'success');
+      
+      if (userLastTxn) {
+        const lastTxnTime = userLastTxn.timestamp.seconds * 1000;
+        const timeDiffMinutes = (Date.now() - lastTxnTime) / 60000;
+        
+        // If last txn was at a different shop less than 2 mins ago
+        if (userLastTxn.shopId !== shop.id && timeDiffMinutes < 2) {
+          flagFraud({
+             type: 'IMPOSSIBLE_TRAVEL',
+             severity: 'critical',
+             customerId: matchedCustomer.phone,
+             customerName: matchedCustomer.name,
+             details: `Transaction detected at different terminals within ${Math.round(timeDiffMinutes)} mins. Distance gap anomaly.`
+          });
+          // For project demo, we still allow but flag it.
+        }
+      }
+    }
     // Force PIN ONLY for transactions strictly over ₹5,000
     // Any payment less than or equal to 5000 is processed directly as requested
     if (parseFloat(amount) > 5000) {
@@ -295,6 +434,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
     localStorage.setItem('look2pay_customers', JSON.stringify(updated));
 
     setStep('success');
+    speak("Payment successful. Thank you.");
     confetti({
       particleCount: 150,
       spread: 100,
@@ -842,12 +982,21 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                  </div>
               </div>
 
-              <button
-                onClick={() => onNavigate('landing')}
-                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-100"
-              >
-                Confirm & Return to Home
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => onNavigate('landing')}
+                  className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-100"
+                >
+                  Confirm & Logout
+                </button>
+                <button
+                  onClick={generateReceipt}
+                  className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all active:scale-95 shadow-xl shadow-blue-100 flex items-center justify-center gap-2"
+                >
+                   <CreditCard size={14} />
+                   Download Receipt
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { jsPDF } from 'jspdf';
 import { ViewState, Customer, Transaction } from '../types';
 import { 
   ArrowLeft, 
@@ -29,11 +30,69 @@ interface ShopDashboardProps {
 }
 
 export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'customers'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'customers' | 'security'>('overview');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const downloadPdfReport = () => {
+    const doc = new jsPDF();
+    const dateStr = new Date().toLocaleDateString();
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text(`${shop.name.toUpperCase()} - BUSINESS REPORT`, 20, 20);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated on: ${dateStr}`, 20, 28);
+    doc.text(`Terminal ID: ${shop.id.toUpperCase()}`, 20, 33);
+    
+    doc.setDrawColor(220, 220, 220);
+    doc.line(20, 38, 190, 38);
+    
+    // Financial Summary
+    const totalIncome = allTransactions.reduce((acc, t) => acc + (t.status === 'success' ? t.amount : 0), 0);
+    const serviceFees = totalIncome * 0.055;
+    const netProfit = totalIncome - serviceFees;
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("FINANCIAL SUMMARY", 20, 50);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total Gross Income: Rs. ${totalIncome.toLocaleString()}`, 20, 58);
+    doc.text(`Estimated Service Fees (5.5%): Rs. ${serviceFees.toLocaleString()}`, 20, 63);
+    doc.text(`Net Settled Profit: Rs. ${netProfit.toLocaleString()}`, 20, 68);
+    
+    doc.line(20, 75, 190, 75);
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("TRANSACTION LEDGER (MERCHANT COPY)", 20, 85);
+    
+    // Table Header
+    doc.setFontSize(9);
+    doc.text("TXN ID", 20, 95);
+    doc.text("CUSTOMER NAME", 50, 95);
+    doc.text("AMOUNT", 130, 95);
+    doc.text("STATUS", 165, 95);
+    doc.line(20, 97, 190, 97);
+    
+    let y = 105;
+    allTransactions.forEach((tx) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(tx.id.substring(4), 20, y);
+      doc.text(tx.customerName, 50, y);
+      doc.text(`${tx.amount.toLocaleString()}`, 130, y);
+      doc.text(tx.status.toUpperCase(), 165, y);
+      y += 8;
+    });
+    
+    doc.save(`${shop.name}_Business_Report.pdf`);
+  };
+
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -45,7 +104,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
   });
 
   // Primary data from localStorage with fallbacks
-  const { customers, allTransactions } = useMemo(() => {
+  const { customers, allTransactions, fraudAlerts } = useMemo(() => {
     const storedCustomers = JSON.parse(localStorage.getItem('look2pay_customers') || '[]');
     const storedTransactions = JSON.parse(localStorage.getItem('look2pay_transactions') || '[]');
 
@@ -71,6 +130,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
 
     // Filter transactions to only ones for this shop
     const shopTransactions = (storedTransactions as Transaction[]).filter(t => t.shopId === shop.id);
+    const fraudAlerts = JSON.parse(localStorage.getItem('look2pay_fraud_alerts') || '[]');
 
     if (shopTransactions.length === 0 && shop.id === 's1') {
        shopTransactions.push(
@@ -83,7 +143,8 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
 
     return { 
       customers: formattedCustomers, 
-      allTransactions: shopTransactions
+      allTransactions: shopTransactions,
+      fraudAlerts: fraudAlerts.filter((a: any) => a.shopId === shop.id)
     };
   }, [shop.id]);
 
@@ -157,6 +218,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
             <SidebarLink icon={<LayoutDashboard size={18}/>} label="Dashboard" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
             <SidebarLink icon={<History size={18}/>} label="Transactions" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
             <SidebarLink icon={<Users size={18}/>} label="Customer Base" active={activeTab === 'customers'} onClick={() => setActiveTab('customers')} />
+            <SidebarLink icon={<ShieldCheck size={18}/>} label="Security Dashboard" active={activeTab === 'security'} onClick={() => setActiveTab('security')} />
             <SidebarLink icon={<Settings size={18}/>} label="Shop Settings" />
           </nav>
         </div>
@@ -258,7 +320,12 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                          <History size={14} className="text-slate-400" />
                          Transaction Ledger
                       </h3>
-                      <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900">Download Report</button>
+                      <button 
+                        onClick={downloadPdfReport}
+                        className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900"
+                      >
+                        Download Report
+                      </button>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
@@ -332,6 +399,86 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                   </div>
                 </div>
               </div>
+
+              {/* Security Insights Tab */}
+              {activeTab === 'security' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-8 text-left"
+                >
+                  <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-xl shadow-slate-100/50">
+                    <div className="flex items-center justify-between mb-8">
+                       <div>
+                          <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Security Insights</h3>
+                          <p className="text-xs text-slate-500 font-medium">Real-time fraud detection and system integrity logs.</p>
+                       </div>
+                       <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                          <ShieldCheck size={16} />
+                          <span className="text-[10px] font-black uppercase tracking-widest">System Reinforced</span>
+                       </div>
+                    </div>
+
+                    {fraudAlerts.length === 0 ? (
+                      <div className="py-24 flex flex-col items-center justify-center text-slate-400 space-y-4">
+                        <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200">
+                           <ShieldCheck size={48} />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-black uppercase tracking-widest text-slate-600 mb-1">No Anomalies Detected</p>
+                          <p className="text-xs">Your terminal is currently secure. No high-risk behavior found.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {fraudAlerts.map((alert: any, i: number) => (
+                          <div key={i} className={`p-6 rounded-[2rem] border ${alert.severity === 'critical' ? 'bg-red-50/50 border-red-100' : 'bg-amber-50/50 border-amber-100'} flex items-start gap-5`}>
+                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${alert.severity === 'critical' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                                <AlertCircle size={24} />
+                             </div>
+                             <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                   <p className={`font-black uppercase text-[10px] tracking-widest ${alert.severity === 'critical' ? 'text-red-600' : 'text-amber-600'}`}>{alert.type.replace(/_/g, ' ')}</p>
+                                   <p className="text-[10px] font-bold text-slate-400 uppercase">{new Date(alert.timestamp).toLocaleString()}</p>
+                                </div>
+                                <h4 className="text-lg font-black text-slate-900 leading-tight mb-2">Subject: {alert.customerName}</h4>
+                                <p className="text-xs text-slate-600 font-medium leading-relaxed">{alert.details}</p>
+                                <div className="mt-4 flex gap-3">
+                                   <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors">Review Account</button>
+                                   <button className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors">Dismiss False Alert</button>
+                                </div>
+                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl">
+                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-blue-400 mb-6 font-bold text-xl">1</div>
+                        <h4 className="text-xl font-black uppercase tracking-tight mb-3">Randomized Challenges</h4>
+                        <p className="text-slate-400 text-sm font-medium leading-relaxed mb-6">Anti-spoofing is active. Every session requests a unique combination of biometric movements to prevent high-fidelity video replay attacks.</p>
+                        <div className="flex items-center gap-2 text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                           <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                           Operational: Active Monitoring
+                        </div>
+                     </div>
+
+                     <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-xl shadow-slate-100/50">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6">
+                           <Users size={24} />
+                        </div>
+                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-3">Entity Trust Score</h4>
+                        <p className="text-slate-500 text-sm font-medium leading-relaxed mb-6">Aggregate trust scoring is applied to all customers. Frequent verification failures or distance anomalies reduce trust levels, triggering mandatory PIN overrides.</p>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                           <motion.div initial={{ width: 0 }} animate={{ width: '92%' }} className="h-full bg-emerald-500" />
+                        </div>
+                        <p className="mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Network Trust: 92%</p>
+                     </div>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
         </div>
       </main>
