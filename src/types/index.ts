@@ -1,4 +1,7 @@
-import { Timestamp } from 'firebase/firestore';
+export interface Timestamp {
+  seconds: number;
+  nanoseconds: number;
+}
 
 export interface Shop {
   id: string;

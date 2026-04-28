@@ -224,7 +224,7 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
 function FeatureCard({ icon, title, description, className = "" }: { icon: React.ReactNode, title: string, description: string, className?: string }) {
   return (
     <motion.div
-      whileHover={{ y: -8, shadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)" }}
+      whileHover={{ y: -8, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)" }}
       className={`group flex flex-col p-10 bg-slate-50/50 rounded-3xl border border-slate-100 transition-all hover:bg-white hover:border-blue-100 ${className}`}
     >
       <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center mb-8 shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all">

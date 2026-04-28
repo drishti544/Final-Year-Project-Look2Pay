@@ -305,31 +305,37 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                     overlay={
                       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
                         {/* Scanning HUD */}
-                        <div className="w-56 h-56 border-2 border-white/20 rounded-full flex items-center justify-center relative">
+                        <div className="relative w-64 h-64 flex items-center justify-center">
+                           {/* Outer soft glow ring */}
+                           <div className="absolute inset-0 rounded-full border border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.05)]" />
+                           
+                           {/* Minimal rotating accent */}
                            <motion.div 
                              animate={{ rotate: 360 }}
-                             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                             className="absolute inset-0 border-t-2 border-l-2 border-blue-400 rounded-full opacity-60"
+                             transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                             className="absolute inset-0 rounded-full border-t border-blue-400 opacity-40 shadow-[0_0_10px_rgba(96,165,250,0.4)]"
                            />
-                           <div className="w-48 h-48 border border-white/10 rounded-full" />
+                           
+                           {/* Static thin inner ring */}
+                           <div className="w-48 h-48 rounded-full border border-white/5" />
                         </div>
                         
                         {isAnalyzing && (
                           <motion.div 
-                            initial={{ top: "0%" }}
-                            animate={{ top: "100%" }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                            className="absolute left-0 right-0 h-0.5 bg-blue-400 shadow-[0_0_15px_rgba(96,165,250,0.8)] z-20"
+                            initial={{ translateY: -128 }}
+                            animate={{ translateY: 128 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_10px_rgba(96,165,250,0.6)] z-20"
                           />
                         )}
                         
                         {step === 'scan' && !isAnalyzing && (
                           <motion.div 
-                            animate={{ opacity: [0.4, 1, 0.4] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="mt-4 text-[10px] font-bold text-white uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="mt-6 text-[10px] font-bold text-white/60 uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md"
                           >
-                            Keep Still for Identification
+                            Align face to center
                           </motion.div>
                         )}
                         
@@ -452,7 +458,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                 {[0, 1, 2, 3].map((i) => (
                   <input
                     key={i}
-                    ref={el => otpRefs.current[i] = el}
+                    ref={(el) => { otpRefs.current[i] = el; }}
                     type="text"
                     maxLength={1}
                     value={otp[i]}

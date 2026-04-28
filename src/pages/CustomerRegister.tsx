@@ -167,9 +167,21 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
                    className="w-full h-full"
                    onVideoLoad={(v) => videoRef.current = v}
                    overlay={
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      <div className="w-full h-full border-[20px] border-slate-900/40" />
-                      <div className="absolute inset-0 border-2 border-blue-400/30 rounded-full scale-95 border-dashed" />
+                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                       {/* Sleek outer guide */}
+                       <div className="w-[85%] h-[85%] border border-white/20 rounded-full shadow-[0_0_50px_rgba(0,0,0,0.3)_inset] flex items-center justify-center">
+                          <motion.div 
+                            animate={{ opacity: [0.1, 0.3, 0.1] }}
+                            transition={{ duration: 3, repeat: Infinity }}
+                            className="w-full h-full border-2 border-blue-400 rounded-full opacity-20"
+                          />
+                       </div>
+                       
+                       {/* Minimal Corner Brackets */}
+                       <div className="absolute top-10 left-10 w-4 h-4 border-t-2 border-l-2 border-white/40" />
+                       <div className="absolute top-10 right-10 w-4 h-4 border-t-2 border-r-2 border-white/40" />
+                       <div className="absolute bottom-10 left-10 w-4 h-4 border-b-2 border-l-2 border-white/40" />
+                       <div className="absolute bottom-10 right-10 w-4 h-4 border-b-2 border-r-2 border-white/40" />
                     </div>
                   }
                 />

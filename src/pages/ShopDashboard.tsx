@@ -32,6 +32,15 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    status: [] as string[],
+    minAmount: '',
+    maxAmount: '',
+    customerName: ''
+  });
 
   // Primary data from localStorage with fallbacks
   const { customers, allTransactions } = useMemo(() => {
@@ -63,7 +72,9 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
     if (shopTransactions.length === 0 && shop.id === 's1') {
        shopTransactions.push(
          { id: 'TXN-A001', shopId: 's1', customerId: '9876543210', customerName: 'Rahul Sharma', amount: 45, timestamp: { seconds: Date.now()/1000 - 3600, nanoseconds: 0 } as any, status: 'success' },
-         { id: 'TXN-A002', shopId: 's1', customerId: '8765432109', customerName: 'Ananya Iyer', amount: 120, timestamp: { seconds: Date.now()/1000 - 7200, nanoseconds: 0 } as any, status: 'success' }
+         { id: 'TXN-A002', shopId: 's1', customerId: '8765432109', customerName: 'Ananya Iyer', amount: 120, timestamp: { seconds: Date.now()/1000 - 7200, nanoseconds: 0 } as any, status: 'success' },
+         { id: 'TXN-A003', shopId: 's1', customerId: '9876543210', customerName: 'Rahul Sharma', amount: 300, timestamp: { seconds: Date.now()/1000 - 86400, nanoseconds: 0 } as any, status: 'failed' },
+         { id: 'TXN-A004', shopId: 's1', customerId: '8765432109', customerName: 'Ananya Iyer', amount: 50, timestamp: { seconds: Date.now()/1000 - 172800, nanoseconds: 0 } as any, status: 'flagged' }
        );
     }
 
@@ -72,6 +83,31 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
       allTransactions: shopTransactions
     };
   }, [shop.id]);
+
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter(tx => {
+      // Date filter
+      const txDate = new Date(tx.timestamp.seconds * 1000);
+      if (filters.startDate && txDate < new Date(filters.startDate)) return false;
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        if (txDate > endDate) return false;
+      }
+
+      // Status filter
+      if (filters.status.length > 0 && !filters.status.includes(tx.status)) return false;
+
+      // Amount filter
+      if (filters.minAmount !== '' && tx.amount < Number(filters.minAmount)) return false;
+      if (filters.maxAmount !== '' && tx.amount > Number(filters.maxAmount)) return false;
+
+      // Customer filter
+      if (filters.customerName && !tx.customerName.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+
+      return true;
+    }).sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+  }, [allTransactions, filters]);
 
   const stats = useMemo(() => {
     const totalRev = allTransactions.reduce((acc, t) => acc + (t.status === 'success' ? t.amount : 0), 0);
@@ -316,13 +352,123 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                 <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h4 className="font-semibold text-slate-800">Transaction Ledger</h4>
                     <div className="flex gap-2">
-                      <button className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-xs font-medium hover:bg-slate-50 flex items-center gap-2">
+                      <button 
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className={`px-3 py-1.5 border rounded-md text-xs font-medium flex items-center gap-2 transition-colors ${
+                          isFilterOpen ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
                         <Filter size={14} />
-                        Filter
+                        Filter {Object.values(filters).some(v => Array.isArray(v) ? v.length > 0 : v !== '') && <span className="w-2 h-2 rounded-full bg-blue-500"></span>}
                       </button>
                       <button className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-medium hover:bg-blue-700">Export CSV</button>
                     </div>
                 </div>
+
+                <AnimatePresence>
+                  {isFilterOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="border-b border-slate-100 overflow-hidden"
+                    >
+                      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50/30">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date Range</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="date" 
+                              value={filters.startDate}
+                              onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs outline-none focus:border-blue-500"
+                            />
+                            <span className="text-slate-300">-</span>
+                            <input 
+                              type="date"
+                              value={filters.endDate}
+                              onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Transaction Status</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['success', 'failed', 'flagged'].map((status) => (
+                              <button
+                                key={status}
+                                onClick={() => {
+                                  const newStatus = filters.status.includes(status)
+                                    ? filters.status.filter(s => s !== status)
+                                    : [...filters.status, status];
+                                  setFilters({...filters, status: newStatus});
+                                }}
+                                className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-colors ${
+                                  filters.status.includes(status)
+                                    ? 'bg-blue-100 text-blue-600 border border-blue-200'
+                                    : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'
+                                }`}
+                              >
+                                {status}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Range</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number"
+                              placeholder="Min"
+                              value={filters.minAmount}
+                              onChange={(e) => setFilters({...filters, minAmount: e.target.value})}
+                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs outline-none focus:border-blue-500"
+                            />
+                            <span className="text-slate-300">-</span>
+                            <input 
+                              type="number"
+                              placeholder="Max"
+                              value={filters.maxAmount}
+                              onChange={(e) => setFilters({...filters, maxAmount: e.target.value})}
+                              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Name</label>
+                          <input 
+                            type="text"
+                            placeholder="Search customer name..."
+                            value={filters.customerName}
+                            onChange={(e) => setFilters({...filters, customerName: e.target.value})}
+                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div className="flex items-end justify-end">
+                          <button 
+                            onClick={() => setFilters({
+                              startDate: '',
+                              endDate: '',
+                              status: [],
+                              minAmount: '',
+                              maxAmount: '',
+                              customerName: ''
+                            })}
+                            className="text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                          >
+                            <X size={12} />
+                            Reset Filters
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -336,21 +482,29 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                        {allTransactions.map((tx, i) => (
-                          <tr key={i} className="hover:bg-slate-50/30 transition-colors">
-                            <td className="px-6 py-4 text-xs font-medium text-slate-600">
-                              {new Date(tx.timestamp.seconds * 1000).toLocaleDateString()} • {new Date(tx.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </td>
-                            <td className="px-6 py-4 text-sm font-semibold text-slate-800">{tx.customerName}</td>
-                            <td className="px-6 py-4 text-xs font-mono text-slate-400 uppercase">{tx.id}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-slate-800">₹{tx.amount.toLocaleString()}</td>
-                            <td className="px-6 py-4 text-right">
-                              <span className={`px-2 py-1 ${tx.status === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} text-[10px] font-black uppercase rounded shadow-sm`}>
-                                {tx.status}
-                              </span>
+                        {filteredTransactions.length > 0 ? (
+                          filteredTransactions.map((tx, i) => (
+                            <tr key={i} className="hover:bg-slate-50/30 transition-colors">
+                              <td className="px-6 py-4 text-xs font-medium text-slate-600">
+                                {new Date(tx.timestamp.seconds * 1000).toLocaleDateString()} • {new Date(tx.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </td>
+                              <td className="px-6 py-4 text-sm font-semibold text-slate-800">{tx.customerName}</td>
+                              <td className="px-6 py-4 text-xs font-mono text-slate-400 uppercase">{tx.id}</td>
+                              <td className="px-6 py-4 text-sm font-bold text-slate-800">₹{tx.amount.toLocaleString()}</td>
+                              <td className="px-6 py-4 text-right">
+                                <span className={`px-2 py-1 ${tx.status === 'success' ? 'bg-emerald-50 text-emerald-600' : tx.status === 'failed' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'} text-[10px] font-black uppercase rounded shadow-sm`}>
+                                  {tx.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-sm italic">
+                              No transactions match the selected filters.
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                   </table>
                 </div>
