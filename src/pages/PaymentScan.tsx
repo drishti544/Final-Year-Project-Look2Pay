@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ViewState } from '../types';
 import CameraView from '../components/CameraView';
-import { getFaceEmbedding, compareEmbeddings, detectFace, isBlinking, isSmiling } from '../utils/faceApi';
+import { getFaceEmbedding, compareEmbeddings, detectFace, isBlinking, isSmiling, getFaceOrientation } from '../utils/faceApi';
 import { ArrowLeft, Loader2, ShieldCheck, CreditCard, Sparkles, AlertCircle, CheckCircle2, QrCode, Camera } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -20,6 +20,8 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
   const [error, setError] = useState<string | null>(null);
   const [matchedCustomer, setMatchedCustomer] = useState<any>(null);
   const [matchedCustomerTransactions, setMatchedCustomerTransactions] = useState<any[]>([]);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [isAmbiguous, setIsAmbiguous] = useState(false);
   const [livelinessPass, setLivelinessPass] = useState(false);
   const [livelinessInstruction, setLivelinessInstruction] = useState<'blink' | 'shake' | 'nod' | 'none'>('none');
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -43,6 +45,18 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
     if (value && index < 3) {
       otpRefs.current[index + 1]?.focus();
     }
+
+    // Auto submit if all digits filled
+    if (newOtp.every(d => d !== '')) {
+      const enteredOtp = newOtp.join('');
+      if (enteredOtp === matchedCustomer.pin) {
+        processPayment();
+      } else {
+        setError(`Invalid security code. Access Denied.`);
+        setOtp(['', '', '', '']);
+        otpRefs.current[0]?.focus();
+      }
+    }
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -53,10 +67,10 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
 
   const validateOtpAndPay = () => {
     const enteredOtp = otp.join('');
-    if (enteredOtp === '1234') {
+    if (enteredOtp === matchedCustomer.pin) {
       processPayment();
     } else {
-      setError("Invalid security code. Please try again (Hint: 1234)");
+      setError(`Invalid security code. Access Denied.`);
       setOtp(['', '', '', '']);
       otpRefs.current[0]?.focus();
     }
@@ -69,33 +83,80 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
 
   const startLivelinessCheck = async () => {
     setLivelinessInstruction('blink');
-    let blinkDetected = false;
-    let motionDetected = false;
+    const startTime = Date.now();
+    const TIMEOUT = 20000; // 20 seconds for full check
+    
+    // Tracking state for movements
+    const state = {
+      blinkDone: false,
+      nodStep: 0, // 0: none, 1: up, 2: down, 3: done
+      shakeStep: 0, // 0: none, 1: left, 2: right, 3: done
+      initialPose: null as { yaw: number, pitch: number } | null,
+    };
 
     const checkLoop = async () => {
-      if (!videoRef.current || livelinessRef.current.passed) return;
+      // Return if conditions aren't met or if we've already passed/errored
+      if (!videoRef.current || livelinessRef.current.passed || step !== 'verify') return;
+
+      // Timeout check
+      if (Date.now() - startTime > TIMEOUT) {
+        setLivelinessInstruction('none');
+        setError("Liveliness verification timed out. Please keep your face centered and follow instructions promptly.");
+        setStep('scan'); // Reset to scan step
+        return;
+      }
 
       try {
         const detection = await detectFace(videoRef.current);
         if (detection) {
-          // Logic for blink
-          if (livelinessRef.current.instruction === 'blink' && isBlinking(detection.landmarks)) {
-            blinkDetected = true;
+          const { landmarks } = detection;
+          const pose = getFaceOrientation(landmarks);
+          
+          if (!state.initialPose) {
+            state.initialPose = pose;
+          }
+
+          // 1. BLINK CHECK
+          if (livelinessRef.current.instruction === 'blink') {
+            if (isBlinking(landmarks)) {
+              state.blinkDone = true;
+              setLivelinessInstruction('nod');
+            }
           } 
+          
+          // 2. NOD CHECK (Pitch movement)
+          else if (livelinessRef.current.instruction === 'nod') {
+            const relPitch = pose.pitch - state.initialPose.pitch;
+            if (state.nodStep === 0 && relPitch < -0.15) state.nodStep = 1; // Looked up
+            else if (state.nodStep === 1 && relPitch > 0.15) state.nodStep = 2; // Looked down
+            else if (state.nodStep === 2 && Math.abs(relPitch) < 0.05) {
+              state.nodStep = 3;
+              setLivelinessInstruction('shake');
+            }
+          }
+
+          // 3. SHAKE CHECK (Yaw movement)
+          else if (livelinessRef.current.instruction === 'shake') {
+            const relYaw = pose.yaw - state.initialPose.yaw;
+            if (state.shakeStep === 0 && relYaw < -0.15) state.shakeStep = 1; // Turned left
+            else if (state.shakeStep === 1 && relYaw > 0.15) state.shakeStep = 2; // Turned right
+            else if (state.shakeStep === 2 && Math.abs(relYaw) < 0.05) {
+              state.shakeStep = 3;
+              
+              // ALL DONE
+              setLivelinessInstruction('none');
+              setLivelinessPass(true);
+              livelinessRef.current.passed = true;
+              setTimeout(() => handleFinalize(), 800);
+              return; // Stop loop
+            }
+          }
         }
       } catch (e) {
         console.error("Liveliness tracking error", e);
       }
 
-      if (blinkDetected) {
-        setLivelinessInstruction('none'); 
-        setLivelinessPass(true);
-        livelinessRef.current.passed = true;
-        // AUTOMATIC FINALIZE
-        setTimeout(() => {
-          handleFinalize();
-        }, 800);
-      } else {
+      if (!livelinessRef.current.passed) {
         requestAnimationFrame(checkLoop);
       }
     };
@@ -111,7 +172,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
     try {
       const embedding = await getFaceEmbedding(videoRef.current);
       if (!embedding) {
-        setError("No face detected. Please center your face.");
+        setError("Biometric capture failed: No face detected in the frame. Please ensure good lighting and center your face.");
         setIsAnalyzing(false);
         return;
       }
@@ -120,20 +181,29 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       const allTxns = JSON.parse(localStorage.getItem('look2pay_transactions') || '[]');
       
       let match = null;
+      let closeMatches = 0;
       
       for (const c of customers) {
-        if (compareEmbeddings(embedding, new Float32Array(c.embedding))) {
-          match = c;
-          break;
+        const distance = compareEmbeddings(embedding, new Float32Array(c.embedding));
+        // If distance is under a broader threshold, count as high-similarity
+        if (distance < 0.62) {
+          closeMatches++;
+        }
+        
+        if (distance < 0.55) { // Match found
+          if (!match || distance < compareEmbeddings(embedding, new Float32Array(match.embedding))) {
+            match = c;
+          }
         }
       }
 
       if (!match) {
-        setError("Customer not found. Please register first.");
+        setError("Authentication failure: Face does not match any registered account in our secure database.");
         setIsAnalyzing(false);
         return;
       }
 
+      setIsAmbiguous(closeMatches > 1);
       setMatchedCustomer(match);
       // Fetch recent history for this specific customer
       const recentTxns = allTxns.filter((t: any) => t.customerId === match.phone).slice(0, 3);
@@ -146,15 +216,16 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       livelinessRef.current.passed = false;
       startLivelinessCheck();
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("AI processing failed. Please try again.");
+      setError(`Secure scan failed: ${err.message || "An unexpected error occurred during biometric processing."}`);
       setIsAnalyzing(false);
     }
   };
 
   const handleFinalize = () => {
-    if (parseFloat(amount) > 6000) {
+    // If ambiguous identity (twins), force OTP regardless of amount
+    if (parseFloat(amount) > 6000 || isAmbiguous) {
       setStep('otp');
     } else {
       processPayment();
@@ -165,13 +236,21 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
     setStep('processing');
     await new Promise(r => setTimeout(r, 2000));
     
+    // Check balance
+    if (matchedCustomer.wallet < parseFloat(amount)) {
+      setError(`Payment Refused: Insufficient funds in wallet. Remaining balance: ₹${matchedCustomer.wallet.toLocaleString()}`);
+      setStep('prepare');
+      return;
+    }
+
     // Update balance in "DB"
     const customers = JSON.parse(localStorage.getItem('look2pay_customers') || '[]');
-    const transactionId = `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const tid = `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    setTransactionId(tid);
     
     // Create transaction record
     const newTransaction = {
-      id: transactionId,
+      id: tid,
       shopId: shop.id,
       customerId: matchedCustomer.phone, 
       customerName: matchedCustomer.name,
@@ -201,13 +280,6 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       origin: { y: 0.6 },
       colors: ['#2563eb', '#10b981', '#141414']
     });
-
-    // Auto-redirect to home after 5 seconds
-    const redirectTimer = setTimeout(() => {
-      onNavigate('landing');
-    }, 5000);
-
-    return () => clearTimeout(redirectTimer);
   };
 
   return (
@@ -306,26 +378,138 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
                         {/* Scanning HUD */}
                         <div className="relative w-64 h-64 flex items-center justify-center">
-                           {/* Outer soft glow ring */}
-                           <div className="absolute inset-0 rounded-full border border-white/20 shadow-[0_0_40px_rgba(255,255,255,0.05)]" />
-                           
-                           {/* Minimal rotating accent */}
-                           <motion.div 
-                             animate={{ rotate: 360 }}
-                             transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                             className="absolute inset-0 rounded-full border-t border-blue-400 opacity-40 shadow-[0_0_10px_rgba(96,165,250,0.4)]"
-                           />
-                           
-                           {/* Static thin inner ring */}
-                           <div className="w-48 h-48 rounded-full border border-white/5" />
+                           {/* STATUS COLOR LOGIC */}
+                           {(() => {
+                             const getStatusColor = () => {
+                               if (livelinessPass) return '#10b981'; // Green
+                               if (step === 'verify') {
+                                 if (livelinessInstruction === 'blink') return '#3b82f6'; // Blue
+                                 if (livelinessInstruction === 'nod') return '#8b5cf6'; // Violet
+                                 if (livelinessInstruction === 'shake') return '#6366f1'; // Indigo
+                                 return '#f59e0b'; // Amber
+                               }
+                               if (isAnalyzing) return '#60a5fa'; // Light Blue
+                               return 'rgba(148, 163, 184, 0.3)'; // Muted
+                             };
+                             const statusColor = getStatusColor();
+                             
+                             return (
+                               <>
+                                 {/* Background glow that matches state */}
+                                 <motion.div 
+                                   animate={{ 
+                                     backgroundColor: statusColor,
+                                     opacity: [0.05, 0.1, 0.05],
+                                     scale: [1, 1.1, 1]
+                                   }}
+                                   transition={{ duration: 4, repeat: Infinity }}
+                                   className="absolute inset-0 rounded-full blur-3xl opacity-10"
+                                 />
+
+                                 {/* Outer dashed rotating ring */}
+                                 <motion.div 
+                                   animate={{ 
+                                     rotate: 360,
+                                     borderColor: statusColor 
+                                   }}
+                                   transition={{ 
+                                     rotate: { duration: 25, repeat: Infinity, ease: "linear" },
+                                     borderColor: { duration: 0.5 }
+                                   }}
+                                   className="absolute inset-0 rounded-full border-2 border-dashed opacity-20"
+                                 />
+                                 
+                                 {/* Pulsing glow ring */}
+                                 <motion.div 
+                                   animate={{ 
+                                     scale: [1, 1.05, 1], 
+                                     opacity: [0.3, 0.6, 0.3],
+                                     borderColor: statusColor,
+                                     boxShadow: `0 0 30px ${statusColor}33`
+                                   }}
+                                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                   className="absolute inset-4 rounded-full border opacity-40 shadow-xl"
+                                 />
+
+                                 {/* Main rotating accent */}
+                                 <motion.div 
+                                   animate={{ 
+                                     rotate: -360,
+                                     borderTopColor: statusColor
+                                   }}
+                                   transition={{ 
+                                     rotate: { duration: isAnalyzing ? 4 : 10, repeat: Infinity, ease: "linear" },
+                                     borderTopColor: { duration: 0.5 }
+                                   }}
+                                   className="absolute inset-0 rounded-full border-t-2 opacity-80"
+                                 />
+
+                                 {/* Orbital Particles */}
+                                 {[0, 72, 144, 216, 288].map((angle, i) => (
+                                   <motion.div
+                                     key={i}
+                                     animate={{ 
+                                       rotate: 360,
+                                       scale: isAnalyzing ? [1, 1.5, 1] : 1
+                                     }}
+                                     transition={{ 
+                                       rotate: { duration: 3 + i, repeat: Infinity, ease: "linear" },
+                                       scale: { duration: 1, repeat: Infinity }
+                                     }}
+                                     className="absolute inset-[-10px] rounded-full"
+                                   >
+                                      <motion.div 
+                                        animate={{ backgroundColor: statusColor }}
+                                        className="w-1.5 h-1.5 rounded-full absolute top-1/2 left-0 shadow-lg"
+                                      />
+                                   </motion.div>
+                                 ))}
+                                 
+                                 {/* Corner brackets */}
+                                 <div className="absolute inset-0">
+                                    <motion.div 
+                                      animate={{ scale: [1, 1.1, 1], borderColor: statusColor }}
+                                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                      className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 rounded-tl-xl" 
+                                    />
+                                    <motion.div 
+                                      animate={{ scale: [1, 1.1, 1], borderColor: statusColor }}
+                                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                                      className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 rounded-tr-xl" 
+                                    />
+                                    <motion.div 
+                                      animate={{ scale: [1, 1.1, 1], borderColor: statusColor }}
+                                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                      className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 rounded-bl-xl" 
+                                    />
+                                    <motion.div 
+                                      animate={{ scale: [1, 1.1, 1], borderColor: statusColor }}
+                                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                                      className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 rounded-br-xl" 
+                                    />
+                                 </div>
+                               </>
+                             );
+                           })()}
+
+                           {/* Center target circle */}
+                           <div className="w-48 h-48 rounded-full border border-white/10 backdrop-blur-[1px] relative overflow-hidden">
+                              {isAnalyzing && (
+                                <motion.div 
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 0.1 }}
+                                  className="absolute inset-0 bg-blue-400"
+                                />
+                              )}
+                           </div>
                         </div>
                         
                         {isAnalyzing && (
                           <motion.div 
                             initial={{ translateY: -128 }}
                             animate={{ translateY: 128 }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                            className="absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_10px_rgba(96,165,250,0.6)] z-20"
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_15px_rgba(96,165,250,0.8)] z-20"
                           />
                         )}
                         
@@ -362,15 +546,29 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                   
                   {/* Liveliness Instructions Overlay */}
                   <AnimatePresence>
-                    {livelinessInstruction === 'blink' && step === 'verify' && (
+                    {livelinessInstruction !== 'none' && step === 'verify' && (
                       <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute bottom-6 left-0 right-0 flex justify-center px-6"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="absolute inset-0 flex items-center justify-center p-6 z-30"
                       >
-                         <div className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl border-b-4 border-blue-800 animate-pulse">
-                            Action Required: BLINK YOUR EYES
+                         <div className="bg-blue-600/90 backdrop-blur-md text-white px-8 py-5 rounded-[2rem] shadow-2xl border border-white/20 flex flex-col items-center text-center max-w-[200px]">
+                            <motion.div
+                              animate={{ y: [0, -5, 0] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                              className="mb-3"
+                            >
+                              {livelinessInstruction === 'blink' && <div className="text-4xl">👀</div>}
+                              {livelinessInstruction === 'nod' && <motion.div animate={{ rotateX: [0, -20, 20, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-4xl">👤</motion.div>}
+                              {livelinessInstruction === 'shake' && <motion.div animate={{ rotateY: [0, -30, 30, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-4xl">👤</motion.div>}
+                            </motion.div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Verify Action</span>
+                            <h4 className="text-sm font-black uppercase leading-tight">
+                              {livelinessInstruction === 'blink' && "Blink your eyes"}
+                              {livelinessInstruction === 'nod' && "Nod your head"}
+                              {livelinessInstruction === 'shake' && "Shake your head"}
+                            </h4>
                          </div>
                       </motion.div>
                     )}
@@ -432,10 +630,22 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 p-4 bg-red-50 text-red-700 rounded-2xl text-[11px] font-bold border border-red-100"
+                  className="flex flex-col gap-3 p-4 bg-red-50 text-red-700 rounded-2xl border border-red-100"
                 >
-                  <AlertCircle size={16} className="shrink-0" />
-                  {error}
+                  <div className="flex items-center gap-3 text-[11px] font-bold">
+                    <AlertCircle size={16} className="shrink-0" />
+                    {error}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setError(null);
+                      handleFaceScan();
+                    }}
+                    className="w-full py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Camera size={12} />
+                    Try Again
+                  </button>
                 </motion.div>
               )}
             </motion.div>
@@ -451,8 +661,22 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
               <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                  <ShieldCheck size={32} />
               </div>
-              <h3 className="text-2xl font-black uppercase mb-2 tracking-tight">Security Code</h3>
-              <p className="text-slate-500 text-sm mb-10 max-w-xs mx-auto font-medium">Verify your payment for high-value transactions above ₹6,000.</p>
+              <h3 className="text-2xl font-black uppercase mb-2 tracking-tight">Security PIN</h3>
+              <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto font-medium">Please enter your 4-digit security PIN to finalize your <b>₹{amount}</b> purchase.</p>
+
+              {isAmbiguous && (
+                <div className="mb-8 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3 text-left max-w-xs mx-auto">
+                  <div className="shrink-0 mt-0.5">
+                    <Sparkles className="text-amber-500" size={16} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Identity Check</p>
+                    <p className="text-[10px] text-amber-600 font-bold leading-[1.3] uppercase opacity-80">
+                      High biometric similarity detected (e.g. Twins). Secure PIN is mandatory.
+                    </p>
+                  </div>
+                </div>
+              )}
               
               <div className="flex gap-4 justify-center mb-10">
                 {[0, 1, 2, 3].map((i) => (
@@ -534,7 +758,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                 
                 <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Merchant Copy</span>
-                  <span className="text-xs font-mono font-bold text-slate-400">#L2P-829-XJ9</span>
+                  <span className="text-xs font-mono font-bold text-slate-400">#{transactionId || 'L2P-829-XJ9'}</span>
                 </div>
                 
                 <div className="space-y-6">
@@ -599,7 +823,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                 onClick={() => onNavigate('landing')}
                 className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-100"
               >
-                Done (Redirecting in 5s...)
+                Confirm & Return to Home
               </button>
             </motion.div>
           )}

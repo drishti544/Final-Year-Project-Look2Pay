@@ -39,7 +39,8 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
     status: [] as string[],
     minAmount: '',
     maxAmount: '',
-    customerName: ''
+    customerName: '',
+    transactionId: ''
   });
 
   // Primary data from localStorage with fallbacks
@@ -52,6 +53,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
       id: c.phone, // Using phone as ID consistently
       name: c.name,
       phoneNumber: c.phone,
+      pin: c.pin || '0000', // Default fallback for old records
       walletBalance: c.wallet,
       transactionCount: c.transactionCount || 0,
       createdAt: { seconds: new Date(c.createdAt).getTime() / 1000, nanoseconds: 0 } as any,
@@ -61,8 +63,8 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
     // Example/Seed data ONLY for Shop s1 (the XYZ store)
     if (formattedCustomers.length === 0 && shop.id === 's1') {
       formattedCustomers.push(
-        { id: '9876543210', name: 'Rahul Sharma (Hostel-4)', phoneNumber: '+91 9876543210', walletBalance: 450, transactionCount: 12, createdAt: { seconds: 1672531200, nanoseconds: 0 } as any, faceDescriptor: [] },
-        { id: '8765432109', name: 'Ananya Iyer (CSE Dept)', phoneNumber: '+91 8765432109', walletBalance: 1200, transactionCount: 8, createdAt: { seconds: 1675209600, nanoseconds: 0 } as any, faceDescriptor: [] }
+        { id: '9876543210', name: 'Rahul Sharma (Hostel-4)', phoneNumber: '+91 9876543210', pin: '1111', walletBalance: 450, transactionCount: 12, createdAt: { seconds: 1672531200, nanoseconds: 0 } as any, faceDescriptor: [] },
+        { id: '8765432109', name: 'Ananya Iyer (CSE Dept)', phoneNumber: '+91 8765432109', pin: '2222', walletBalance: 1200, transactionCount: 8, createdAt: { seconds: 1675209600, nanoseconds: 0 } as any, faceDescriptor: [] }
       );
     }
 
@@ -104,6 +106,9 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
 
       // Customer filter
       if (filters.customerName && !tx.customerName.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+
+      // Transaction ID filter
+      if (filters.transactionId && !tx.id.toLowerCase().includes(filters.transactionId.toLowerCase())) return false;
 
       return true;
     }).sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
@@ -438,13 +443,24 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                           </div>
                         </div>
 
-                        <div className="space-y-2 md:col-span-2">
+                        <div className="space-y-2">
                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Name</label>
                           <input 
                             type="text"
-                            placeholder="Search customer name..."
+                            placeholder="Search name..."
                             value={filters.customerName}
                             onChange={(e) => setFilters({...filters, customerName: e.target.value})}
+                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Transaction ID</label>
+                          <input 
+                            type="text"
+                            placeholder="Search ID..."
+                            value={filters.transactionId}
+                            onChange={(e) => setFilters({...filters, transactionId: e.target.value})}
                             className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-xs outline-none focus:border-blue-500"
                           />
                         </div>
@@ -457,7 +473,8 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                               status: [],
                               minAmount: '',
                               maxAmount: '',
-                              customerName: ''
+                              customerName: '',
+                              transactionId: ''
                             })}
                             className="text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-1"
                           >

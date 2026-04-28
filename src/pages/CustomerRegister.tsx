@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { ViewState } from '../types';
 import CameraView from '../components/CameraView';
 import { getFaceEmbedding } from '../utils/faceApi';
-import { User, Phone, ArrowLeft, CheckCircle2, UserPlus, Loader2, Sparkles } from 'lucide-react';
+import { User, Phone, ArrowLeft, CheckCircle2, UserPlus, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface CustomerRegisterProps {
@@ -14,13 +14,15 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
   const [step, setStep] = useState<'info' | 'scan' | 'success'>('info');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
   const [initialBalance, setInitialBalance] = useState('5000');
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const handleNext = () => {
-    if (name && phone) setStep('scan');
+    if (name && phone && pin.length === 4) setStep('scan');
   };
 
   const handleScan = async () => {
@@ -40,11 +42,17 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
         return;
       }
 
+      // Check for existing transactions for this phone number
+      const allTransactions = JSON.parse(localStorage.getItem('look2pay_transactions') || '[]');
+      const userTxns = allTransactions.filter((t: any) => t.customerId === phone).slice(0, 3);
+      setRecentTransactions(userTxns);
+
       // In a real app, we'd save this to Firestore here
       // For now, we'll store it in localStorage to simulate "memory" for the payment demo
       const mockCustomer = {
         name,
         phone,
+        pin,
         embedding: Array.from(embedding),
         wallet: parseFloat(initialBalance),
         createdAt: new Date().toISOString()
@@ -121,6 +129,21 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+91"
                       className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white rounded-xl outline-none transition-all font-medium text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Secure PIN (4 Digits)</label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input 
+                      type="password" 
+                      maxLength={4}
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="SET PIN"
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white rounded-xl outline-none transition-all font-black text-slate-800 tracking-[0.5em]"
                     />
                   </div>
                 </div>
@@ -226,7 +249,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
             <h3 className="text-3xl font-bold text-slate-900 uppercase tracking-tight mb-4">Enrollment Complete</h3>
             <p className="text-slate-500 mb-12 text-sm leading-relaxed max-w-xs">Your biometric ID has been successfully added to the Look2Pay network.</p>
             
-            <div className="w-full bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-12 text-left">
+            <div className="w-full bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-6 text-left">
               <div className="flex justify-between items-center">
                  <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pre-Authorized Balance</p>
@@ -235,6 +258,28 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
                  <Sparkles size={24} className="text-blue-500" />
               </div>
             </div>
+
+            {recentTransactions.length > 0 && (
+              <div className="w-full mb-8 text-left">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 px-2">Account Activity Identified</p>
+                <div className="space-y-3">
+                  {recentTransactions.map((tx) => (
+                    <div key={tx.id} className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 border border-slate-100">
+                            <CheckCircle2 size={14} />
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-slate-600 uppercase">{tx.id}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">PRE-ENROLLMENT ACTIVITY</p>
+                         </div>
+                      </div>
+                      <span className="text-sm font-black text-slate-900 opacity-60">₹{tx.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               onClick={() => onNavigate('landing')}

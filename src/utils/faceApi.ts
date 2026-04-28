@@ -75,8 +75,41 @@ export function isSmiling(landmarks: faceapi.FaceLandmarks68) {
   return width > eyeDist * 0.85; // Heuristic: smiling widens the mouth relative to eye distance
 }
 
+export function getFaceOrientation(landmarks: faceapi.FaceLandmarks68) {
+  const nose = landmarks.getNose();
+  const leftEye = landmarks.getLeftEye();
+  const rightEye = landmarks.getRightEye();
+  const jaw = landmarks.getJawOutline();
+
+  // Eye centers
+  const leftEyeCenter = {
+    x: leftEye.reduce((acc, p) => acc + p.x, 0) / 6,
+    y: leftEye.reduce((acc, p) => acc + p.y, 0) / 6
+  };
+  const rightEyeCenter = {
+    x: rightEye.reduce((acc, p) => acc + p.x, 0) / 6,
+    y: rightEye.reduce((acc, p) => acc + p.y, 0) / 6
+  };
+  const eyesCenter = {
+    x: (leftEyeCenter.x + rightEyeCenter.x) / 2,
+    y: (leftEyeCenter.y + rightEyeCenter.y) / 2
+  };
+
+  const noseTip = nose[3];
+  
+  // Yaw (Shake): Rotation around the vertical axis.
+  // We compare the nose tip horizontal position to the midpoint between the eyes.
+  // Normalized by eye distance.
+  const eyeDistance = Math.sqrt(Math.pow(rightEyeCenter.x - leftEyeCenter.x, 2) + Math.pow(rightEyeCenter.y - leftEyeCenter.y, 2));
+  const yaw = (noseTip.x - eyesCenter.x) / eyeDistance;
+
+  // Pitch (Nod): Rotation around the horizontal axis.
+  // We look at the vertical distance from eye line to nose tip.
+  const pitch = (noseTip.y - eyesCenter.y) / eyeDistance;
+
+  return { yaw, pitch };
+}
+
 export function compareEmbeddings(embedding1: Float32Array, embedding2: Float32Array) {
-  const distance = faceapi.euclideanDistance(embedding1, embedding2);
-  // Typical threshold for face recognition is 0.6. Lower is more strict (better for payments).
-  return distance < 0.45;
+  return faceapi.euclideanDistance(embedding1, embedding2);
 }

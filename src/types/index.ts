@@ -18,6 +18,7 @@ export interface Customer {
   id: string;
   name: string;
   phoneNumber: string;
+  pin: string; // Secure 6-digit PIN for 2FA
   faceDescriptor: number[]; // Store as number array for Firestore
   walletBalance: number;
   transactionCount: number;
