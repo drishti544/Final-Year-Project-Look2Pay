@@ -11,7 +11,7 @@ interface PaymentScanProps {
   shop: { name: string, id: string };
 }
 
-type PaymentStep = 'prepare' | 'scan' | 'verify' | 'otp' | 'processing' | 'success';
+type PaymentStep = 'prepare' | 'scan' | 'verify' | 'otp' | 'forgot_pin' | 'processing' | 'success';
 
 export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
   const [step, setStep] = useState<PaymentStep>('prepare');
@@ -25,6 +25,8 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
   const [livelinessPass, setLivelinessPass] = useState(false);
   const [livelinessInstruction, setLivelinessInstruction] = useState<'blink' | 'shake' | 'nod' | 'none'>('none');
   const [otp, setOtp] = useState(['', '', '', '']);
+  const [smsOtp, setSmsOtp] = useState(['', '', '', '', '', '']);
+  const [isSendingSms, setIsSendingSms] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const livelinessRef = useRef<{ instruction: 'blink' | 'shake' | 'nod' | 'none', passed: boolean }>({ instruction: 'none', passed: false });
@@ -73,6 +75,39 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       setError(`Invalid security code. Access Denied.`);
       setOtp(['', '', '', '']);
       otpRefs.current[0]?.focus();
+    }
+  };
+
+  const handleForgotPin = () => {
+    setIsSendingSms(true);
+    setError(null);
+    // Simulate SMS dispatch
+    setTimeout(() => {
+      setIsSendingSms(false);
+      setStep('forgot_pin');
+    }, 1200);
+  };
+
+  const handleSmsOtpChange = (index: number, value: string) => {
+    if (value.length > 1) value = value[0];
+    const newSmsOtp = [...smsOtp];
+    newSmsOtp[index] = value;
+    setSmsOtp(newSmsOtp);
+
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`sms-otp-${index + 1}`) as HTMLInputElement;
+      nextInput?.focus();
+    }
+
+    if (newSmsOtp.every(d => d !== '')) {
+      // Mock SMS code is 123456
+      if (newSmsOtp.join('') === '123456') {
+        processPayment();
+      } else {
+        setError("Invalid SMS verification code. Please try again.");
+        setSmsOtp(['', '', '', '', '', '']);
+        document.getElementById('sms-otp-0')?.focus();
+      }
     }
   };
 
@@ -639,10 +674,60 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
 
               <button
                 onClick={validateOtpAndPay}
-                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95"
+                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95 mb-4"
               >
                 Verify Payment
               </button>
+
+              <button
+                onClick={handleForgotPin}
+                disabled={isSendingSms}
+                className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors flex items-center justify-center gap-2 mx-auto"
+              >
+                {isSendingSms ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertCircle size={12} />}
+                {isSendingSms ? "Sending SMS..." : "Forgot Security PIN?"}
+              </button>
+            </motion.div>
+          )}
+
+          {step === 'forgot_pin' && (
+            <motion.div
+              key="forgot_pin"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                 <QrCode size={32} />
+              </div>
+              <h3 className="text-2xl font-black uppercase mb-2 tracking-tight">SMS Verification</h3>
+              <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto font-medium">
+                We've sent a 6-digit code to <span className="text-slate-900">+{matchedCustomer.phone.substring(0, 2)}******{matchedCustomer.phone.slice(-4)}</span>.
+              </p>
+
+              <div className="flex gap-2 justify-center mb-10">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <input
+                    key={i}
+                    id={`sms-otp-${i}`}
+                    type="text"
+                    maxLength={1}
+                    value={smsOtp[i]}
+                    onChange={(e) => handleSmsOtpChange(i, e.target.value)}
+                    className="w-10 h-14 bg-slate-50 border-2 border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl text-center text-xl font-black outline-none transition-all"
+                  />
+                ))}
+              </div>
+
+              {error && (
+                <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-100">
+                  {error}
+                </div>
+              )}
+
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Didn't receive it? <button className="text-blue-600 underline" onClick={handleForgotPin}>Resend OTP</button>
+              </p>
             </motion.div>
           )}
 
