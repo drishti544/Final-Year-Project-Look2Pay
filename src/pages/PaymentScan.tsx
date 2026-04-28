@@ -431,6 +431,18 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                                    className="absolute inset-4 rounded-full border opacity-40 shadow-xl"
                                  />
 
+                                 {/* Simple Bright Tracking Ring */}
+                                 <motion.div 
+                                   animate={{ 
+                                     scale: [1, 1.02, 1],
+                                     opacity: [0.7, 1, 0.7],
+                                     borderColor: statusColor,
+                                     boxShadow: `0 0 25px ${statusColor}44`
+                                   }}
+                                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                   className="absolute inset-8 rounded-full border-2 z-10"
+                                 />
+
                                  {/* Main rotating accent */}
                                  <motion.div 
                                    animate={{ 
