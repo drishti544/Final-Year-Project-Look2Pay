@@ -209,8 +209,9 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
   };
 
   const handleFinalize = () => {
-    // If ambiguous identity (twins), force OTP regardless of amount
-    if (parseFloat(amount) > 6000 || isAmbiguous) {
+    // Force PIN ONLY for transactions strictly over ₹5,000
+    // Any payment less than or equal to 5000 is processed directly as requested
+    if (parseFloat(amount) > 5000) {
       setStep('otp');
     } else {
       processPayment();
@@ -596,6 +597,20 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                     <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Identity Check</p>
                     <p className="text-[10px] text-amber-600 font-bold leading-[1.3] uppercase opacity-80">
                       High biometric similarity detected (e.g. Twins). Secure PIN is mandatory.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!isAmbiguous && parseFloat(amount) > 5000 && (
+                <div className="mb-8 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3 text-left max-w-xs mx-auto">
+                  <div className="shrink-0 mt-0.5">
+                    <ShieldCheck className="text-blue-500" size={16} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">High Value Payment</p>
+                    <p className="text-[10px] text-blue-600 font-bold leading-[1.3] uppercase opacity-80">
+                      Security PIN required for all transactions above ₹5,000 for your safety.
                     </p>
                   </div>
                 </div>
