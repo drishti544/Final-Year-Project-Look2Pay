@@ -28,6 +28,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [matchedCustomer, setMatchedCustomer] = useState<any>(null);
+  const [matchedCustomerTransactions, setMatchedCustomerTransactions] = useState<any[]>([]);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   
   // Liveliness & Anti-Spoofing States
@@ -284,6 +285,12 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       if (!match) throw new Error("No account matched. Are you registered?");
 
       setMatchedCustomer(match);
+      
+      // Load user transactions
+      const allTxns = JSON.parse(localStorage.getItem('look2pay_transactions') || '[]');
+      const userTxns = allTxns.filter((t: any) => t.customerId === match.phone).slice(0, 3);
+      setMatchedCustomerTransactions(userTxns);
+
       setIsAnalyzing(false);
       setStep('verify');
 

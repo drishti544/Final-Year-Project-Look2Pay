@@ -48,11 +48,11 @@ export default function CameraView({ onVideoLoad, className = '', overlay }: Cam
           </div>
           
           <h4 className="text-lg font-bold mb-3 uppercase tracking-tight">Camera Access Required</h4>
-          <p className="text-slate-400 text-sm mb-8 leading-relaxed max-w-[280px]">
+          <p className="text-slate-400 text-sm mb-8 leading-relaxed max-w-70">
             To enable biometric payments, please click the <strong>camera icon</strong> in your browser address bar and select <strong>"Allow"</strong>.
           </p>
 
-          <div className="flex flex-col gap-3 w-full max-w-[240px]">
+          <div className="flex flex-col gap-3 w-full max-w-60">
             <button 
               onClick={() => window.location.reload()}
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-500/20"

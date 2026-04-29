@@ -283,7 +283,7 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
           className="text-6xl md:text-8xl font-black tracking-tight text-slate-900 mb-8 leading-[0.9]"
         >
           PAY WITH <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">YOUR FACE.</span>
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-emerald-500">YOUR FACE.</span>
         </motion.h1>
 
         <motion.p
@@ -310,7 +310,7 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
           </button>
           <button
             onClick={() => onNavigate('customer-register')}
-            className="flex-1 px-10 py-5 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold uppercase tracking-widest text-xs hover:border-slate-900 hover:scale-105 transition-all flex items-center justify-center gap-3 group shadow-sm bg-gradient-to-b from-white to-slate-50/50"
+            className="flex-1 px-10 py-5 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold uppercase tracking-widest text-xs hover:border-slate-900 hover:scale-105 transition-all flex items-center justify-center gap-3 group shadow-sm bg-linear-to-b from-white to-slate-50/50"
           >
             <UserPlus size={18} />
             Register Now
