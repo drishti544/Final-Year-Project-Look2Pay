@@ -115,9 +115,11 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
           <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <img src="/logo.png" alt="Look2Pay Logo" className="w-10 h-10 object-contain rounded-lg" onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
-              (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-logo')?.classList.remove('hidden');
+              const fallback = (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-logo');
+              fallback?.classList.remove('hidden');
+              fallback?.classList.add('flex');
             }} />
-            <div className="fallback-logo hidden w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-xs">L2P</div>
+            <div className="fallback-logo hidden w-8 h-8 bg-slate-900 rounded-lg items-center justify-center text-white font-black text-xs">L2P</div>
             <span className="font-black text-xl tracking-tighter text-slate-900">LOOK2PAY</span>
           </div>
           <div className="flex gap-2">
@@ -269,7 +271,7 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
           <img 
             src="/banner.png" 
             alt="Look2Pay Brand Logo" 
-            className="w-full max-w-[600px] h-auto object-contain"
+            className="w-full max-w-150 h-auto object-contain"
             onError={(e) => (e.target as HTMLImageElement).style.display = 'none'}
           />
         </motion.div>
@@ -349,7 +351,7 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
 
       {/* Administration Teaser */}
       <section className="relative z-10 py-32 px-6 overflow-hidden">
-        <div className="max-w-5xl mx-auto bg-slate-900 rounded-[3rem] p-12 md:p-20 text-center relative shadow-3xl">
+        <div className="max-w-5xl mx-auto bg-slate-900 rounded-6xl p-12 md:p-20 text-center relative shadow-3xl">
           <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
              <Store className="w-64 h-64 text-white" strokeWidth={0.5} />
           </div>

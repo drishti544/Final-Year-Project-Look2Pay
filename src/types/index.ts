@@ -3,15 +3,15 @@ export interface Timestamp {
   nanoseconds: number;
 }
 
-export interface Shop {
+export interface ShopDetails {
   id: string;
   name: string;
-  ownerEmail: string;
-  ownerId: string;
-  dailyRevenue: number;
-  monthlyRevenue: number;
-  customerCount: number;
-  createdAt: Timestamp;
+  ownerEmail?: string;
+  ownerId?: string;
+  dailyRevenue?: number;
+  monthlyRevenue?: number;
+  customerCount?: number;
+  createdAt?: Timestamp;
 }
 
 export interface Customer {

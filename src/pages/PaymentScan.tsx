@@ -527,7 +527,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                              animate={{ 
                                borderColor: liveliness.pass ? '#10b981' : (isAnalyzing ? '#60a5fa' : '#3b82f6'),
                              }}
-                             className="absolute inset-0 rounded-[3.5rem] border-[2px] transition-colors"
+                             className="absolute inset-0 rounded-[3.5rem] border-2 transition-colors"
                            />
                            <div className="w-48 h-60 rounded-[3.5rem] border border-white/20 relative" />
                         </div>
@@ -537,7 +537,7 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
                             initial={{ translateY: -128 }}
                             animate={{ translateY: 128 }}
                             transition={{ duration: 1.5, repeat: Infinity }}
-                            className="absolute left-0 right-0 h-[2px] bg-blue-400 z-20 shadow-[0_0_15px_blue]"
+                            className="absolute left-0 right-0 h-0.5 bg-blue-400 z-20 shadow-[0_0_15px_blue]"
                           />
                         )}
                         

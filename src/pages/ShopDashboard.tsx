@@ -189,7 +189,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
                   </div>
 
                   <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-                     <div className="xl:col-span-8 bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden min-h-[400px]">
+                     <div className="xl:col-span-8 bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden min-h-100">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Recent Transactions</h3>
                            <button onClick={downloadPdfReport} className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-2">

@@ -92,7 +92,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white p-10 rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50"
+            className="bg-white p-10 rounded-4xl border border-slate-200 shadow-xl shadow-slate-200/50"
           >
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-slate-900 uppercase tracking-tight mb-2">Create Identity</h3>
