@@ -108,6 +108,32 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
     const storedCustomers = JSON.parse(localStorage.getItem('look2pay_customers') || '[]');
     const storedTransactions = JSON.parse(localStorage.getItem('look2pay_transactions') || '[]');
 
+    // Seed Data for Demo if empty
+    if (storedCustomers.length === 0) {
+      const demoCustomers = [
+        {
+          name: "Drishti Dasgupta",
+          phone: "9876543210",
+          email: "drishti@example.com",
+          balance: 25000,
+          faceEmbedding: [0.1, 0.2, 0.3], // Mock embedding
+          pin: "1234",
+          lastSeen: new Date().toISOString()
+        },
+        {
+          name: "Rahul Sharma",
+          phone: "9123456780",
+          email: "rahul@example.com",
+          balance: 12000,
+          faceEmbedding: [0.4, 0.5, 0.6],
+          pin: "0000",
+          lastSeen: new Date().toISOString()
+        }
+      ];
+      localStorage.setItem('look2pay_customers', JSON.stringify(demoCustomers));
+      return { customers: demoCustomers, allTransactions: [], fraudAlerts: [] };
+    }
+
     // Convert local stored customers to the Customer interface
     const formattedCustomers: Customer[] = storedCustomers.map((c: any) => ({
       id: c.phone, // Using phone as ID consistently
