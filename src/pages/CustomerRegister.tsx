@@ -55,7 +55,8 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
         pin,
         embedding: Array.from(embedding),
         wallet: parseFloat(initialBalance),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        transactionCount: 0
       };
       
       const existing = JSON.parse(localStorage.getItem('look2pay_customers') || '[]');
@@ -63,15 +64,9 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
 
       setIsScanning(false);
       setStep('success');
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#2563eb', '#141414', '#ffffff']
-      });
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     } catch (err) {
-      console.error(err);
-      setError("An error occurred during scanning. Please try again.");
+      setError("Biometric capture failed. Retrying...");
       setIsScanning(false);
     }
   };
