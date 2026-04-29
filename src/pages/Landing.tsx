@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ViewState } from '../types';
-import { Camera, Store, UserPlus, CreditCard, ShieldCheck, Zap, Sparkles, X, Key, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Camera, Store, UserPlus, CreditCard, ShieldCheck, Zap, X, Key, AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface LandingProps {
   onNavigate: (view: ViewState) => void;
