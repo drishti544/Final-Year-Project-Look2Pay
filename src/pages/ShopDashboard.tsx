@@ -22,7 +22,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Customer, Transaction, ShopDetails } from '../types';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface ShopDashboardProps {
@@ -93,7 +93,7 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
       })));
 
       setAllTransactions(storedTransactions.sort((a: any, b: any) => b.timestamp - a.timestamp));
-      setFraudAlerts(storedAlerts);
+      setFraudAlerts(storedAlerts || []);
     };
 
     loadData();
@@ -160,7 +160,6 @@ export default function ShopDashboard({ onNavigate, shop }: ShopDashboardProps) 
             <SidebarLink icon={<History size={18}/>} label="Ledger" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
             <SidebarLink icon={<Users size={18}/>} label="Customers" active={activeTab === 'customers'} onClick={() => setActiveTab('customers')} />
             <SidebarLink icon={<ShieldCheck size={18}/>} label="Security" active={activeTab === 'security'} onClick={() => setActiveTab('security')} />
-            <SidebarLink icon={<ArrowLeft size={18}/>} label="Exit Terminal" onClick={() => onNavigate('landing')} />
           </nav>
         </div>
       </aside>

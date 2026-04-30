@@ -111,5 +111,9 @@ export function getFaceOrientation(landmarks: faceapi.FaceLandmarks68) {
 }
 
 export function compareEmbeddings(embedding1: Float32Array, embedding2: Float32Array) {
+  if (embedding1.length !== embedding2.length) {
+    console.warn(`Embedding length mismatch: ${embedding1.length} vs ${embedding2.length}`);
+    return 1.0; // High distance means no match
+  }
   return faceapi.euclideanDistance(embedding1, embedding2);
 }
