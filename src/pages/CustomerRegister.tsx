@@ -47,8 +47,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
       const userTxns = allTransactions.filter((t: any) => t.customerId === phone).slice(0, 3);
       setRecentTransactions(userTxns);
 
-      // In a real app, we'd save this to Firestore here
-      // For now, we'll store it in localStorage to simulate "memory" for the payment demo
+      // Save to localStorage
       const mockCustomer = {
         name,
         phone,
@@ -66,7 +65,7 @@ export default function CustomerRegister({ onNavigate }: CustomerRegisterProps) 
       setStep('success');
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     } catch (err) {
-      setError("Biometric capture failed. Retrying...");
+      setError("Biometric capture failed. Please try again.");
       setIsScanning(false);
     }
   };

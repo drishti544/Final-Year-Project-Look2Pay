@@ -47,16 +47,22 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
 
   const handleRecoverKey = () => {
     const storedShops = JSON.parse(localStorage.getItem('look2pay_shops') || '[]');
-    const shop = storedShops.find((s: any) => s.id.toLowerCase() === recoveryId.toLowerCase());
+    const defaultShops = [
+      { id: 's1', name: 'XYZ STORE NAME', pin: '1234' },
+      { id: 's2', name: 'CAMPUS STATIONERY', pin: '9999' }
+    ];
+    const allShops = [...defaultShops, ...storedShops];
+
+    // Search by ID or Name
+    const shop = allShops.find((s: any) => 
+      s.id.toLowerCase() === recoveryId.toLowerCase() || 
+      s.name.toLowerCase().includes(recoveryId.toLowerCase())
+    );
 
     if (shop) {
       setRecoveryResult(shop.pin);
-    } else if (recoveryId.toLowerCase() === 's1') {
-       setRecoveryResult('1234');
-    } else if (recoveryId.toLowerCase() === 's2') {
-       setRecoveryResult('9999');
     } else {
-      alert("No shop records found for this ID.");
+      alert("No matching shop records found. Tip: Search by your Shop Name if you forgot your ID.");
     }
   };
 
@@ -99,6 +105,7 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
       }
     }
   };
+
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fafbfc] selection:bg-blue-100 selection:text-blue-900">
@@ -204,12 +211,35 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
                     <AlertCircle size={32} />
                   </div>
                   <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Key Recovery</h3>
-                  <p className="text-slate-500 text-sm mb-8 font-medium">Enter your unique Shop ID to recover your manager key.</p>
+                  <p className="text-slate-500 text-sm mb-6 font-medium">Recover your manager key using your Shop ID or Name.</p>
                   
+                  <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl mb-6 text-left">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Find your Shop ID</p>
+                    <div className="max-h-24 overflow-y-auto space-y-1">
+                      {(() => {
+                        const stored = JSON.parse(localStorage.getItem('look2pay_shops') || '[]');
+                        const defaults = [
+                          { id: 's1', name: 'XYZ STORE NAME' },
+                          { id: 's2', name: 'CAMPUS STATIONERY' }
+                        ];
+                        return [...defaults, ...stored].map((s, i) => (
+                          <button 
+                            key={s.id} 
+                            onClick={() => setRecoveryId(s.id)}
+                            className="w-full text-left p-2 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-100 group"
+                          >
+                            <p className="text-[11px] font-bold text-slate-700 truncate">{i + 1}. {s.name}</p>
+                            <p className="text-[9px] font-medium text-slate-400 font-mono uppercase tracking-tight group-hover:text-blue-500">ID: {s.id}</p>
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+
                   <input
                     type="text"
                     autoFocus
-                    placeholder="Shop ID (e.g. s1)"
+                    placeholder="Enter Shop ID or Name"
                     value={recoveryId}
                     onChange={(e) => setRecoveryId(e.target.value)}
                     className="w-full text-center text-xl font-black py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-amber-500 transition-all mb-6 uppercase tracking-widest"
@@ -359,7 +389,7 @@ export default function Landing({ onNavigate, onShopLogin, onShopSelect }: Landi
           <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-6">Shopkeeper Dashboard</h2>
           <p className="text-slate-400 mb-12 max-w-lg mx-auto text-base">Check your total sales, manage customer balances, and view payment history all in one place.</p>
           <button
-            onClick={handleShopLoginClick}
+            onClick={() => setLoginModal('login')}
             className="px-12 py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-500 hover:text-white transition-all shadow-xl active:scale-95"
           >
             Go to Dashboard

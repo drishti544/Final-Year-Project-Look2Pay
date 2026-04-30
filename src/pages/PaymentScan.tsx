@@ -358,7 +358,6 @@ export default function PaymentScan({ onNavigate, shop }: PaymentScanProps) {
       }
     }
     // Force PIN ONLY for transactions strictly over ₹5,000
-    // Any payment less than or equal to 5000 is processed directly as requested
     if (parseFloat(amount) > 5000) {
       setStep('otp');
     } else {
